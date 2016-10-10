@@ -3,8 +3,11 @@
 #########################
 ## Xalascript do poder ##
 #########################
-
+https://github.com/xalalau/GMod/tree/master/Xalascript
 Isso aqui é uma porcaria de script para fazer testes e coisas bestas.
+
+Por Xalalau Xubilozo.
+Versão: ???
 
 ]]--
 

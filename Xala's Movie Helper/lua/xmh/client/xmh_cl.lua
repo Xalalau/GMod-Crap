@@ -1,10 +1,12 @@
 --[[
    \   XALA'S MOVIE HELPER
  =3 ]]  Revision = "XMH.Rev.22.3 - 27/08/2016 (dd/mm/yyyy)" --[[
+ =o |   License: MIT
    /   Created by: Xalalau Xubilozo
   |
    \   Garry's Mod Brasil
  =< |   http://www.gmbrblog.blogspot.com.br/
+ =b |   https://github.com/xalalau/GMod/tree/master/Xala's%20Movie%20Helper
    /   Enjoy! - Aproveitem!
 ]]
 

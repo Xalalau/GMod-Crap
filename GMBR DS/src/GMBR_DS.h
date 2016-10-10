@@ -1,7 +1,7 @@
 /*
  * por Xalalau Xubilozo
- * https://github.com/xalalau/GMBR-DS
- * Licença: GPL v2
+ * https://github.com/xalalau/GMod/tree/master/Xala's%20Movie%20Helper
+ * Licença: MIT
  * */
 
 #ifndef HEADER_FILE

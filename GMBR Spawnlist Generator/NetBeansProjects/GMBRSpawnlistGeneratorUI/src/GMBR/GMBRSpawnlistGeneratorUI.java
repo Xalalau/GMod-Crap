@@ -31,8 +31,10 @@ import javax.swing.JFileChooser;
  * @author Xalalau Xubilozo
  * http://gmbrblog.blogspot.com.br/
  * http://mrxalalau.blogspot.com.br/
+ * https://github.com/xalalau/GMod/tree/master/GMBR%20Spawnlist%20Generator
  * 22/08/2015 (dd/mm/yyyy)
  * Version 1.1
+ * License: MIT
  */
 public class GMBRSpawnlistGeneratorUI extends javax.swing.JFrame {
 

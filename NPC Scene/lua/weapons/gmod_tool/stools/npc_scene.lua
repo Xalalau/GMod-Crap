@@ -3,6 +3,8 @@ Credits: tool originally created by Deco and continued by Xalalau
 
 Version 1.2, by Deco     : http://www.garrysmod.org/downloads/?a=view&id=42593 
 Version 1.3.1, by Xalalau: http://steamcommunity.com/sharedfiles/filedetails/?id=121182342
+
+https://github.com/xalalau/GMod/tree/master/NPC%20Scene
 ]]--
 
 TOOL.Category	= "Poser"

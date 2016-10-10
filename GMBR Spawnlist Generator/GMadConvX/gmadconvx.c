@@ -1,8 +1,7 @@
 // Modifyed by Xalalau Xubilozo.
 // http://gmbrblog.blogspot.com.br/
 // http://mrxalalau.blogspot.com.br/
-// https://github.com/xalalau/GMBR-Spawnlist-Generator
-// Lisense: GPL v2
+// https://github.com/xalalau/GMod/tree/master/GMBR%20Spawnlist%20Generator
 // 22/08/2015 (dd/mm/yyyy)
 // Version 2
 // Original: https://facepunch.com/showthread.php?t=1173875 - by SiPlus
