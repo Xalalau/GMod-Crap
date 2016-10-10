@@ -7,24 +7,14 @@ Programa para instalação de servidores dedicados de Garry's Mod ([Página ofic
 
 **LINUX** (Ubuntu)
 
-Primeiramente, devemos clonar o GMBR DS, a Xalateca e instalar o comp-wrapper:
+Primeiramente, clone o repositório e entre na pasta do projeto:
 
 ```sh
-$ git clone https://github.com/xalalau/GMBR-DS.git
-$ mkdir ~/GMBR-DS/lib
-$ cd ~/GMBR-DS/lib
-$ git clone https://github.com/xalalau/Xalateca.git
-$ cd ../
-$ make comp-wrapper
+$ git clone https://github.com/xalalau/GMod.git
+$ cd "~/GMod/GMBR DS"
 ````
 
-Se você também quiser compilar para o Windows diretamente no Linux, instale o mingw (porém os binários compilados por ele não são muito confiaveis):
-
-```sh
-$ make mingw
-````
-
-Agora nós temos uma série de opções para escolher. Veja as combinações para o comando:
+Agora nós temos uma série de opções para escolher. Veja as combinações para de comando para o makefile:
 
 ```sh
 $ make ENTRADA
@@ -50,15 +40,15 @@ $ make GMBR_DS_32
 
 **WINDOWS**
 
-Quando quero compilar o GMBR DS no Windows, eu costumo usar o CodeBlocks. Faça assim então:
+Eu uso o CodeBlocks para compilar C no Windows, fica assim:
 
-- Baixe o código do GMBR DS e extraia ele em um local qualquer (Vamos usar **C:\GMBR-DS**);
+- [Baixe o código do GMBR DS](https://github.com/xalalau/GMod/archive/master.zip) e extraia ele em um local qualquer (Vamos usar **C:\GMBR-DS**);
 - Crie a pasta lib na pasta do GMBR DS (**C:\GMBR-DS\lib**);
-- Baixe a [Xalateca](https://github.com/xalalau/Xalateca) e extraia ela na pasta "lib" do GMBR DS (**C:\GMBR-DS\lib\Xalateca**);
+- Baixe a [Xalateca](https://github.com/xalalau/Xalateca) e a extraia na pasta "lib" do GMBR DS (**C:\GMBR-DS\lib\Xalateca**);
 - Baixe e instale o [CodeBlocks](http://www.codeblocks.org/downloads/26) versão **mingw**;
 - Abra o CodeBlocks e crie um novo **Pojeto de Console**;
 - Passe o "Build target" do projeto para **Release** e cheque nas configurações se o GCC está configurado para **32 bits**;
-- Na árvore de arquivos, delete o "main.c" padrão e mande inlcuir recursivamente os arquivos do GMBR DS (a partir de **C:\GMBR-DS**). Marque para inclusão apenas os arquivos importantes (todos os **.c** e o **.rc**) e clique em aceitar;
+- Na árvore de arquivos, delete o "main.c" e mande inlcuir recursivamente os arquivos do GMBR DS (a partir de **C:\GMBR-DS**). Marque para inclusão apenas os arquivos importantes (todos os **.c** e o **.rc**) e clique em aceitar;
 - Na árvore de arquivos, abra o GMBR_DS.c;
 - Mande compilar;
 - Pronto! O executável vai aparecer na pasta **release** do seu projeto.
