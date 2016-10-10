@@ -1,3 +1,9 @@
+GMod 10/10/16 updates:
+- Added physgun_maxrange ConVar
+- Added gmod_drawtooleffects ConVar to hide certain tool UI and Effects
+- All tools now use the new help system
+
+Items:
 - Test xmh_invisibleall_var (I changed the variable in the code)
 - atmos_enabled 0
 - Model LOD
