@@ -1,0 +1,11 @@
+{
+	"title"		:	"Xala's Movie Helper",
+	"type"		:	"tool",
+	"tags"		:	[ "movie", "scenic" ],
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.svn*"
+	]
+}
