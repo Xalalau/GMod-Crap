@@ -1,0 +1,11 @@
+{
+	"title"		:	"Cel Shading Tool",
+	"type"		:	"tool",
+	"tags"		:	[ "movie", "scenic" ],
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.svn*"
+	]
+}

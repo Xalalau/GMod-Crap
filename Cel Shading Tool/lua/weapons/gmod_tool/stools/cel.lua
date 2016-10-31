@@ -4,7 +4,7 @@
    /   Created by: Xalalau Xubilozo
   |
    \   Special thanks to HomemCamisinhaCósmico, Bomberman Maldito and Nick MBR
- =b |   
+ =b |   https://github.com/xalalau/GMod/tree/master/Cel%20Shading%20Tool
    /   Enjoy! - Aproveitem!
 ]]
 

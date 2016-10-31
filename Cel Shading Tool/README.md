@@ -2,6 +2,8 @@
 
 This tool creates cel shading effects in GMod 13.
 
+> [Workshop Download Link](http://steamcommunity.com/sharedfiles/filedetails/?id=791009548)
+
 Features:
 - 3 rendering modes;
 - Customization options;
@@ -17,6 +19,3 @@ Known problems:
 - The rendering modes don't always work;
 - GM 13 mode seems to be more heavy than it should be;
 - I still need to correctly clear the duplicator when the player remove the cel shading properties with R key;
-
-
-> [Workshop Download Link]()
