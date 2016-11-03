@@ -21,7 +21,7 @@ TOOL.Information = {
 }
 
 local cel_textures = { "models/debug/debugwhite", "models/shiny" }
-local cel_ent_tbl = { }
+local cel_ent_tbl = {}
 
 if ( SERVER ) then
     util.AddNetworkString( "net_left_click_start" )
@@ -92,9 +92,9 @@ if ( CLIENT ) then
                             render.DrawScreenQuad();
                         render.SetStencilEnable( false )
                     elseif ( v[1].cel.Mode == 2 ) then -- GMod 12 halos (light / scale bugs / players)
-                        pos = LocalPlayer():EyePos()+LocalPlayer():EyeAngles():Forward()*10
+                        pos = LocalPlayer():EyePos() + LocalPlayer():EyeAngles():Forward() * 10
                         ang = LocalPlayer():EyeAngles()
-                        ang = Angle(ang.p+90,ang.y,0)
+                        ang = Angle( ang.p + 90, ang.y, 0 )
                         render.ClearStencil()
                         render.SetStencilEnable( true )
                             render.SetStencilWriteMask( 255 )
@@ -113,7 +113,7 @@ if ( CLIENT ) then
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_EQUAL )
                             cam.Start3D2D( pos,ang,1 )
                                 surface.SetDrawColor( v[1].cel.Color )
-                                surface.DrawRect( -ScrW(), -ScrH(), ScrW()*2, ScrH()*2 )
+                                surface.DrawRect( -ScrW(), -ScrH(), ScrW() * 2, ScrH() * 2 )
                             cam.End3D2D()
                             v[1]:DrawModel()
                         render.SetStencilEnable( false )
@@ -195,7 +195,6 @@ if ( SERVER ) then
         if ( table.Count( cel_ent_tbl ) > 0 ) then
             timer.Create( "FSpawnFix", 3, 1, function()
                 for _,v in pairs( cel_ent_tbl ) do
-                    Msg(v[1].cel.Mode)
                     net.Start( "net_set_halo" )
                     net.WriteEntity( v[1] )
                     net.WriteTable( v[1].cel )
@@ -280,7 +279,7 @@ if ( CLIENT ) then
 
     net.Receive( "net_right_click", function()
         local ent = net.ReadEntity()
-        local result = { }
+        local result = {}
         
         local mat = ent:GetMaterial()
 
@@ -361,9 +360,9 @@ if ( CLIENT ) then
         end
 
         net.Start( "net_left_click_finish" )
-        net.WriteTable( h_data or { } )
-        net.WriteTable( c_data or { } )
-        net.WriteTable( t_data or { } )
+        net.WriteTable( h_data or {} )
+        net.WriteTable( c_data or {} )
+        net.WriteTable( t_data or {} )
         net.WriteEntity( ent )
         net.SendToServer()
     end)
@@ -457,27 +456,27 @@ if ( CLIENT ) then
     function TOOL.BuildCPanel( CPanel )
         CPanel:AddControl( "Header", { Text = "#Tool.cel.name", Description = "#Tool.cel.desc" } )
         CPanel:Help( "" )
-        local params = {Label = "Cell Shading Mode:", MenuButton = "0", Options = {}}
-        params.Options["Sobel"] = {cel_h_mode = "1"}
-        params.Options["GM 12 Halo"] = {cel_h_mode = "2"}
+        local params = { Label = "Cell Shading Mode:", MenuButton = "0", Options = {} }
+        params.Options["Sobel"] = { cel_h_mode = "1" }
+        params.Options["GM 12 Halo"] = { cel_h_mode = "2" }
         if LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() then
-            params.Options["GM 13 Halo"] = {cel_h_mode = "3"}
+            params.Options["GM 13 Halo"] = { cel_h_mode = "3" }
         end
         CPanel:AddControl( "ComboBox", params )
         CPanel:Help( "" )
         CPanel:ControlHelp( "[Note] The rendering modes work good or bad depending on the entity. GMod 13 Halo is very good, but is set to only admins because it's super heavy." )
         if LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() then
             CPanel:AddControl( "Color", { Label = "GM 12/13 Halo Color:", Red = "cel_h_colour_r", Green = "cel_h_colour_g", Blue = "cel_h_colour_b" } )
-            CPanel:AddControl( "Slider" , { Label = "GM 12/13 Halo Shake", Type = "float", Min = "0.00", Max = "1.00", Command = "cel_h_shake"} ) 
+            CPanel:AddControl( "Slider" , { Label = "GM 12/13 Halo Shake", Type = "float", Min = "0.00", Max = "1.00", Command = "cel_h_shake"} )
             CPanel:AddControl( "Slider" , { Label = "GM 13 Halo Size", Type = "int", Min = "0", Max = "10", Command = "cel_h_size_13"} )
         else
             CPanel:AddControl( "Color", { Label = "GM 12 Halo Color:", Red = "cel_h_colour_r", Green = "cel_h_colour_g", Blue = "cel_h_colour_b" } )
-            CPanel:AddControl( "Slider" , { Label = "GM 12 Halo Shake", Type = "float", Min = "0.00", Max = "1.00", Command = "cel_h_shake"} ) 
+            CPanel:AddControl( "Slider" , { Label = "GM 12 Halo Shake", Type = "float", Min = "0.00", Max = "1.00", Command = "cel_h_shake"} )
         end
         CPanel:AddControl( "Slider" , { Label = "GM 12 Halo Size", Type = "float", Min = "0.00", Max = "0.50", Command = "cel_h_size_12"} )
         CPanel:AddControl( "Slider" , { Label = "Sobel Thershold", Type = "float", Min = "0.00", Max = "0.3", Command = "cel_sobel_thershold"} )
         CPanel:Help( "" )
-        CPanel:AddControl( "CheckBox", { Label = "Enable Flat Texture", Command = "cel_apply_texture" } )     
+        CPanel:AddControl( "CheckBox", { Label = "Enable Flat Texture", Command = "cel_apply_texture" } )
         CPanel:AddControl( "Color", { Label = "Select Texture Color:", Red = "cel_colour_r", Green = "cel_colour_g", Blue = "cel_colour_b" } )
         CPanel:AddControl( "CheckBox", { Label = "Enable Texture Reflection", Command = "cel_shiny_texture" } )
         CPanel:Help( "" )
