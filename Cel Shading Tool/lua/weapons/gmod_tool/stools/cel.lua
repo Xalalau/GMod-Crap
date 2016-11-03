@@ -64,14 +64,14 @@ if ( CLIENT ) then
     cel_mat:SetTexture( "$fbtexture", render.GetScreenEffectTexture() )
 
     -- https://facepunch.com/showthread.php?t=1337232
-    hook.Add( "PostDrawOpaqueRenderables", "PlayerBorders", function( )
+    hook.Add( "PostDrawOpaqueRenderables", "PlayerBorders", function()
         if table.Count( cel_ent_tbl ) > 0 then
             for k,v in pairs( cel_ent_tbl ) do
                 if ( !IsValid( v[1] ) ) then
                     cel_ent_tbl[k] = nil  -- Clean the table
                 else
-                    if (v[1].cel.Mode == 1) then -- Sobel PP effect (light / works / players)
-                        render.ClearStencil( )
+                    if ( v[1].cel.Mode == 1 ) then -- Sobel PP effect (light / works / players)
+                        render.ClearStencil()
                         render.SetStencilEnable( true )
                             render.SetStencilWriteMask( 255 )
                             render.SetStencilTestMask( 255 )
@@ -82,42 +82,42 @@ if ( CLIENT ) then
                             if ( v[1].cel.SobelColor ) then
                                 v[1]:SetColor( v[1].cel.SobelColor )
                             end
-                            v[1]:DrawModel( )
+                            v[1]:DrawModel()
                             render.SetBlend( 1 )
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_EQUAL )
-                            render.UpdateScreenEffectTexture( );
+                            render.UpdateScreenEffectTexture();
                             cel_mat:SetFloat( "$threshold", v[1].cel.SobelThershold )
-                            v[1]:DrawModel( )
+                            v[1]:DrawModel()
                             render.SetMaterial( cel_mat );
-                            render.DrawScreenQuad( );
+                            render.DrawScreenQuad();
                         render.SetStencilEnable( false )
-                    elseif (v[1].cel.Mode == 2) then -- GMod 12 halos (light / scale bugs / players)
-                        pos = LocalPlayer( ):EyePos( )+LocalPlayer( ):EyeAngles( ):Forward( )*10
-                        ang = LocalPlayer( ):EyeAngles( )
+                    elseif ( v[1].cel.Mode == 2 ) then -- GMod 12 halos (light / scale bugs / players)
+                        pos = LocalPlayer():EyePos()+LocalPlayer():EyeAngles():Forward()*10
+                        ang = LocalPlayer():EyeAngles()
                         ang = Angle(ang.p+90,ang.y,0)
-                        render.ClearStencil( )
+                        render.ClearStencil()
                         render.SetStencilEnable( true )
                             render.SetStencilWriteMask( 255 )
                             render.SetStencilTestMask( 255 )
                             render.SetStencilReferenceValue( 15 )
-                            render.SetStencilFailOperation(STENCILOPERATION_KEEP)
-                            render.SetStencilZFailOperation(STENCILOPERATION_KEEP)
+                            render.SetStencilFailOperation( STENCILOPERATION_KEEP )
+                            render.SetStencilZFailOperation( STENCILOPERATION_KEEP )
                             render.SetStencilPassOperation( STENCILOPERATION_REPLACE )
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_ALWAYS )
                             render.SetBlend( 0 )
                             v[1]:SetModelScale( v[1].cel.Size + 1.00 + math.Rand( 0, v[1].cel.Shake ), 0 )
-                            v[1]:DrawModel( )
+                            v[1]:DrawModel()
                             v[1]:SetModelScale( 1,0 )
                             render.SetBlend( 1 )
                             render.SetStencilPassOperation( STENCIL_KEEP )
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_EQUAL )
                             cam.Start3D2D( pos,ang,1 )
                                 surface.SetDrawColor( v[1].cel.Color )
-                                surface.DrawRect( -ScrW( ), -ScrH( ), ScrW( )*2, ScrH( )*2 )
-                            cam.End3D2D( )
-                            v[1]:DrawModel( )
+                                surface.DrawRect( -ScrW(), -ScrH(), ScrW()*2, ScrH()*2 )
+                            cam.End3D2D()
+                            v[1]:DrawModel()
                         render.SetStencilEnable( false )
-                    elseif (v[1].cel.Mode == 3) then -- GMod 13 halos (heavy / work / admins)
+                    elseif ( v[1].cel.Mode == 3 ) then -- GMod 13 halos (heavy / work / admins)
                         size = v[1].cel.Size + math.Rand( 0, v[1].cel.Shake * 7 )
                         halo.Add( v, v[1].cel.Color, size, size, 1, false, false )
                     end
@@ -126,9 +126,9 @@ if ( CLIENT ) then
         end
     end )
 
-    net.Receive( "net_set_halo", function( )
-        local ent = net.ReadEntity( )
-        local h_data = net.ReadTable( )
+    net.Receive( "net_set_halo", function()
+        local ent = net.ReadEntity()
+        local h_data = net.ReadTable()
 
         for k,v in pairs( cel_ent_tbl ) do
             if ( table.HasValue( v, ent ) ) then
@@ -140,8 +140,8 @@ if ( CLIENT ) then
         table.insert( cel_ent_tbl, { ent } )
     end )
 
-    net.Receive( "net_remove_halo", function( )
-        local ent = net.ReadEntity( )
+    net.Receive( "net_remove_halo", function()
+        local ent = net.ReadEntity()
 
         for k,v in pairs( cel_ent_tbl ) do
             if ( table.HasValue( v, ent ) ) then
@@ -157,8 +157,8 @@ local function SetHalo( ply, ent, h_data )
     if ( SERVER ) then
         ent.cel = h_data
 
-        timer.Create( "DuplicatorFix", 0.1, 1, function( )
-            for _,v in pairs( player.GetAll( ) ) do
+        timer.Create( "DuplicatorFix", 0.1, 1, function()
+            for _,v in pairs( player.GetAll() ) do
                 net.Start( "net_set_halo" )
                 net.WriteEntity( ent )
                 net.WriteTable( h_data )
@@ -182,7 +182,7 @@ local function RemoveHalo( ent )
             end
         end
 
-        for _,v in pairs( player.GetAll( ) ) do
+        for _,v in pairs( player.GetAll() ) do
             net.Start( "net_remove_halo" )
             net.WriteEntity( ent )
             net.Send( v )
@@ -193,7 +193,7 @@ end
 if ( SERVER ) then
     hook.Add( "PlayerInitialSpawn", "set halo table", function ( ply )
         if ( table.Count( cel_ent_tbl ) > 0 ) then
-            timer.Create( "FSpawnFix", 3, 1, function( )
+            timer.Create( "FSpawnFix", 3, 1, function()
                 for _,v in pairs( cel_ent_tbl ) do
                     Msg(v[1].cel.Mode)
                     net.Start( "net_set_halo" )
@@ -220,7 +220,7 @@ local function SetColor( ply, ent, c_data )
             end
             ent:SetColor( c_data.Color )
             if ( c_data.Mode == 1 ) then
-                ent:PhysWake( )
+                ent:PhysWake()
             end
         end
 
@@ -257,7 +257,7 @@ end
 -- HALO/COLOR/MATERIAL
 -- -------------------
 
-local function ResetOptions( )
+local function ResetOptions()
     if ( CLIENT ) then
         RunConsoleCommand( "cel_h_colour_r", "0" )
         RunConsoleCommand( "cel_h_colour_g", "0" )
@@ -278,11 +278,11 @@ end
 if ( CLIENT ) then
     concommand.Add( "cel_reset_options", ResetOptions )
 
-    net.Receive( "net_right_click", function( )
-        local ent = net.ReadEntity( )
+    net.Receive( "net_right_click", function()
+        local ent = net.ReadEntity()
         local result = { }
         
-        local mat = ent:GetMaterial( )
+        local mat = ent:GetMaterial()
 
         if ( mat == cel_textures[1] ) then
             RunConsoleCommand( "cel_shiny_texture", "0" )
@@ -294,7 +294,7 @@ if ( CLIENT ) then
             RunConsoleCommand( "cel_apply_texture", "0" )
         end
 
-        local clr = ent:GetColor( )
+        local clr = ent:GetColor()
         RunConsoleCommand( "cel_colour_r", tostring( clr.r ) )
         RunConsoleCommand( "cel_colour_g", tostring( clr.g ) )
         RunConsoleCommand( "cel_colour_b", tostring( clr.b ) )
@@ -315,48 +315,48 @@ if ( CLIENT ) then
         end
     end )
 
-    net.Receive( "net_left_click_start", function( )
-        local mode = GetConVar( "cel_h_mode" ):GetInt( )
+    net.Receive( "net_left_click_start", function()
+        local mode = GetConVar( "cel_h_mode" ):GetInt()
 
-        if ( mode == 3 && (! (LocalPlayer( ):IsAdmin( ) or LocalPlayer( ):IsSuperAdmin( ) ) ) ) then
+        if ( mode == 3 && (! (LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) ) ) then
             h_data = { Mode = 0 }
             net.Start( "net_left_click_finish" )
             net.WriteTable( h_data )
-            net.SendToServer( )
+            net.SendToServer()
             return
         end
 
-        local ent = net.ReadEntity( )
+        local ent = net.ReadEntity()
         local c_data, h_data, t_data
 
         -- Halo
         if ( mode != 1 ) then
-            local r = GetConVar( "cel_h_colour_r" ):GetInt( )
-            local g = GetConVar( "cel_h_colour_g" ):GetInt( )
-            local b = GetConVar( "cel_h_colour_b" ):GetInt( )            
-            local shake = GetConVar( "cel_h_shake" ):GetFloat( )
+            local r = GetConVar( "cel_h_colour_r" ):GetInt()
+            local g = GetConVar( "cel_h_colour_g" ):GetInt()
+            local b = GetConVar( "cel_h_colour_b" ):GetInt()            
+            local shake = GetConVar( "cel_h_shake" ):GetFloat()
             local size
             if ( mode == 2 ) then
-                size = GetConVar( "cel_h_size_12" ):GetFloat( )
+                size = GetConVar( "cel_h_size_12" ):GetFloat()
             else
-                size = GetConVar( "cel_h_size_13" ):GetInt( )
+                size = GetConVar( "cel_h_size_13" ):GetInt()
             end
             h_data = { Color = Color( r, g, b, 255 ), Size = size , Shake = shake, Mode = mode }    
         else
-            h_data = { SobelThershold = GetConVar( "cel_sobel_thershold" ):GetFloat( ), Mode = mode }
+            h_data = { SobelThershold = GetConVar( "cel_sobel_thershold" ):GetFloat(), Mode = mode }
         end
 
         -- Texture and Color
-        if ( GetConVar( "cel_apply_texture" ):GetInt( ) == 1 ) then
-            local r = GetConVar( "cel_colour_r" ):GetInt( )
-            local g = GetConVar( "cel_colour_g" ):GetInt( )
-            local b = GetConVar( "cel_colour_b" ):GetInt( )
+        if ( GetConVar( "cel_apply_texture" ):GetInt() == 1 ) then
+            local r = GetConVar( "cel_colour_r" ):GetInt()
+            local g = GetConVar( "cel_colour_g" ):GetInt()
+            local b = GetConVar( "cel_colour_b" ):GetInt()
             if ( mode != 1 ) then
                 c_data = { Color = Color( r, g, b, 255 ) , Mode = mode }
             else
                 h_data.SobelColor = Color( r, g, b, 255 )
             end
-            local texture = GetConVar( "cel_shiny_texture" ):GetInt( )
+            local texture = GetConVar( "cel_shiny_texture" ):GetInt()
             t_data = { MaterialOverride = cel_textures[texture + 1] }
         end
 
@@ -365,22 +365,22 @@ if ( CLIENT ) then
         net.WriteTable( c_data or { } )
         net.WriteTable( t_data or { } )
         net.WriteEntity( ent )
-        net.SendToServer( )
+        net.SendToServer()
     end)
 end
 
 if ( SERVER ) then
     net.Receive( "net_left_click_finish", function( _, ply )
-        local h_data = net.ReadTable( )
+        local h_data = net.ReadTable()
 
         if ( h_data.Mode == 0 ) then
             ply:PrintMessage( HUD_PRINTTALK, "GM 13 Halos are admin only." )
             return
         end
 
-        local c_data = net.ReadTable( )
-        local t_data = net.ReadTable( )
-        local ent = net.ReadEntity( )
+        local c_data = net.ReadTable()
+        local t_data = net.ReadTable()
+        local ent = net.ReadEntity()
 
         SetHalo( nil, ent, h_data )
 
@@ -410,11 +410,11 @@ function TOOL:LeftClick( trace )
     if ( IsValid( ent.AttachedEntity ) ) then ent = ent.AttachedEntity end
 
     if ( !IsValid( ent ) ) then return false end -- The entity is valid and isn't worldspawn
-    if ( ent:IsPlayer( ) ) then return false end
+    if ( ent:IsPlayer() ) then return false end
 
     net.Start( "net_left_click_start" )
     net.WriteEntity( ent )
-    net.Send( self:GetOwner( ) )
+    net.Send( self:GetOwner() )
 
     return true
 end
@@ -427,11 +427,11 @@ function TOOL:RightClick( trace )
 
     if ( ent.cel == nil ) then return false end
     if ( !IsValid( ent ) ) then return false end -- The entity is valid and isn't worldspawn
-    if ( ent:IsPlayer( ) ) then return false end
+    if ( ent:IsPlayer() ) then return false end
 
     net.Start( "net_right_click" )
     net.WriteEntity( ent )
-    net.Send( self:GetOwner( ) )
+    net.Send( self:GetOwner() )
 
     return true
 end
@@ -444,7 +444,7 @@ function TOOL:Reload( trace )
 
     if ( ent.cel == nil ) then return false end
     if ( !IsValid( ent ) ) then return false end -- The entity is valid and isn't worldspawn
-    if ( ent:IsPlayer( ) ) then return false end
+    if ( ent:IsPlayer() ) then return false end
 
     RemoveColor ( ent )
     RemoveHalo ( ent )
@@ -460,13 +460,13 @@ if ( CLIENT ) then
         local params = {Label = "Cell Shading Mode:", MenuButton = "0", Options = {}}
         params.Options["Sobel"] = {cel_h_mode = "1"}
         params.Options["GM 12 Halo"] = {cel_h_mode = "2"}
-        if LocalPlayer( ):IsAdmin( ) or LocalPlayer( ):IsSuperAdmin( ) then
+        if LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() then
             params.Options["GM 13 Halo"] = {cel_h_mode = "3"}
         end
         CPanel:AddControl( "ComboBox", params )
         CPanel:Help( "" )
         CPanel:ControlHelp( "[Note] The rendering modes work good or bad depending on the entity. GMod 13 Halo is very good, but is set to only admins because it's super heavy." )
-        if LocalPlayer( ):IsAdmin( ) or LocalPlayer( ):IsSuperAdmin( ) then
+        if LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() then
             CPanel:AddControl( "Color", { Label = "GM 12/13 Halo Color:", Red = "cel_h_colour_r", Green = "cel_h_colour_g", Blue = "cel_h_colour_b" } )
             CPanel:AddControl( "Slider" , { Label = "GM 12/13 Halo Shake", Type = "float", Min = "0.00", Max = "1.00", Command = "cel_h_shake"} ) 
             CPanel:AddControl( "Slider" , { Label = "GM 13 Halo Size", Type = "int", Min = "0", Max = "10", Command = "cel_h_size_13"} )
@@ -483,8 +483,8 @@ if ( CLIENT ) then
         CPanel:Help( "" )
         CPanel:AddControl("Button" , { Text  = "Reset options", Command = "cel_reset_options" })
         CPanel:Help( "" )
-        timer.Create( "SetCommandsFix", 0.1, 1, function( )
-            ResetOptions( )
+        timer.Create( "SetCommandsFix", 0.1, 1, function()
+            ResetOptions()
         end)
     end
 end
