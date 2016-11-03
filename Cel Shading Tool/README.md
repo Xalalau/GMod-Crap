@@ -5,17 +5,18 @@ This tool creates cel shading effects in GMod 13.
 > [Workshop Download Link](http://steamcommunity.com/sharedfiles/filedetails/?id=791009548)
 
 Features:
-- 3 rendering modes;
-- Customization options;
-- Duplicator support;
-- Ragdoll/NPC support;
-- CTRL + Z support;
-- Copy/Reload support;
-- Well tested with servers.
+- 3 rendering modes: Sobel Post Processing, Garry's Mod 12 Like Halos, Garry's Mod 13 Halos;
+- Customization options: set sizes, make it shake, set colors;
+- Duplicator support; 
+- Ragdoll/NPC support; 
+- Partial "CTRL + Z" support; 
+- Copy/Reload support; 
+- Multiplayer support. 
 
 Known problems:
-- GM 12 mode renders entities inside walls and, because of that, they become visible in the Skybox 3D;
-- It's not possible to apply colors to Sobel mode;
 - The rendering modes don't always work;
+- GM 12 mode keeps rendering entities when players are out of the map / inside wall;
+- Because of the problem right above, entities in GM 12 mode become visible in the 3D Skybox;
+- It's not possible to apply colors to Sobel mode;
 - GM 13 mode seems to be more heavy than it should be;
-- I still need to correctly clear the duplicator when the player remove the cel shading properties with R key;
+- The duplicator still needs to be cleaned when the player removes cel shading properties from a entity.
