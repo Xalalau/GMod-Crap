@@ -19,4 +19,4 @@ Known problems:
 - Because of the problem right above, entities in GM 12 mode become visible in the 3D Skybox;
 - It's not possible to apply colors to Sobel mode;
 - GM 13 mode seems to be more heavy than it should be;
-- The duplicator still needs to be cleaned when the player removes cel shading properties from a entity.
+- The duplicator still needs to be cleaned when the player removes cel shading properties from an entity.

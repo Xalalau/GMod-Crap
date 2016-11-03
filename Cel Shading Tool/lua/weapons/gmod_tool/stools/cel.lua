@@ -117,7 +117,7 @@ if ( CLIENT ) then
                             cam.End3D2D( )
                             v[1]:DrawModel( )
                         render.SetStencilEnable( false )
-                        elseif (v[1].cel.Mode == 3) then -- GMod 13 halos (heavy / work / admins)
+                    elseif (v[1].cel.Mode == 3) then -- GMod 13 halos (heavy / work / admins)
                         size = v[1].cel.Size + math.Rand( 0, v[1].cel.Shake * 7 )
                         halo.Add( v, v[1].cel.Color, size, size, 1, false, false )
                     end
