@@ -4,6 +4,7 @@ GMod 10/10/16 updates:
 - All tools now use the new help system (todos os addons padrões usam)
 
 Items:
+- game.SinglePlayer() hide multiplayer options in singleplayer (http://wiki.garrysmod.com/page/game/SinglePlayer)
 - Test xmh_invisibleall_var (I changed the variable in the code)
 - atmos_enabled 0
 - Model LOD

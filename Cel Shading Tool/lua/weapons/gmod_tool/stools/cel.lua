@@ -437,7 +437,7 @@ if ( CLIENT ) then
                 net.SendToServer()
             end
 
-        if LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() then
+        if ( ( LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) and not game.SinglePlayer() ) then
             ApplyToYourself:SetPos( 155, 95 )
             HaloEnable:SetVisible( true )
             ApplyToPlayers:SetVisible( true )
