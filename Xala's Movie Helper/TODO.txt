@@ -1,24 +1,7 @@
-GMod 10/10/16 updates:
-- Added physgun_maxrange ConVar
-- Added gmod_drawtooleffects ConVar to hide certain tool UI and Effects
-- All tools now use the new help system (todos os addons padrões usam)
-
-Items:
-- game.SinglePlayer() hide multiplayer options in singleplayer (http://wiki.garrysmod.com/page/game/SinglePlayer)
-- Test xmh_invisibleall_var (I changed the variable in the code)
-- atmos_enabled 0
-- Model LOD
-http://steamcommunity.com/sharedfiles/filedetails/?id=175579615&searchtext=
-http://steamcommunity.com/sharedfiles/filedetails/?id=442747507&searchtext=NPC
-- weapon_removergiver
-- Check: "Maybe in the future unless it's already been done...a way to keep the clouds in the sky from moving as it can reveal the frames in your animation." (by KryptojackJr) 
+- NPC ficar amigo/inimigo, seguir, mudar sange...
+http://steamcommunity.com/sharedfiles/filedetails/?id=442747507&searchtext=NPC - Expand NPC movimentation options (NPC Control) (by TaBoo) 
+- "Maybe in the future unless it's already been done...a way to keep the clouds in the sky from moving as it can reveal the frames in your animation." (by KryptojackJr) 
 - Try to make quickload/quicksave (by TaBoo) 
-- Expand NPC movimentation options (NPC Control) (by TaBoo) 
-- Add Source Recorder stuff? "Slider to control it"? (Marcelievsky) 
-- Mute the toolgun sounds (/C/ Toad) 
 - Check admin mods and similar tools for ideas (like Bill Gates does) 
 - Try again to hide the physgun glow when it's set to invisible 
-- Make XMHText 1.1 (indexed TextEntry per line in a Dlistlayout for a decent scrollbar (then ramake the line interations (backspate, enter...) and saving function) // Decent Ctrl + z // Decent organization) (NickMBR suggested this better scrollbar idea) 
-- Check FOV options for vehicles 
 - If some part of a translation is missing, make it English
-- Deixar o XMHText redimensionável (se não o bomberman tem que desligar o computador)

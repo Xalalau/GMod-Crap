@@ -15,7 +15,7 @@ resource.AddFile("materials/skybox/backupup.vmt")
 resource.AddFile("materials/skybox/green.vmt")
 
 -- Language
-LANG = ""
+local LANG = ""
 include("xmh/language.lua" )
 
 if SERVER then
@@ -49,8 +49,9 @@ if CLIENT then
     file.CreateDir(xmh_teleports_folder)
   end
 
-  -- Starts the client side
-  include("xmh/client/xmh_cl.lua")
   -- Loads the XMHText
   include("xmh/client/modules/XMHText.lua")
+  
+  -- Starts the client side
+  include("xmh/client/xmh_cl.lua")
 end

@@ -53,7 +53,7 @@ sub_type:
     -- "defaults" is for setting a function for the "Defaults" section. To use it remove the "default" and "func" fields.
     -- If we don't set a sub type we can remove this field
 value2:
-    -- If the sub_type is "defaults" we will need value2 field to pass a XMH_CATEGORY argument, otherwise we can remove it
+    -- If the sub_type is "defaults" we'll need to pass a XMH_CATEGORY argument in this field, otherwise we can remove it
 
 ________________________________________________________________________
 Net commands (client --> server)
@@ -61,18 +61,16 @@ Net commands (client --> server)
   ["XMH_COMMAND_VAR"] = {
     command_type    = "net",
     category        = XMH_CATEGORY,
-    default         = GetConVar("XMH_COMMAND_VAR"):GetInt() or GetConVar("XMH_COMMAND_VAR"):GetFloat(), *
-    value           = GetConVar("XMH_COMMAND_VAR"):GetInt() or GetConVar("XMH_COMMAND_VAR"):GetFloat() or nil, * **
+    default         = GetConVar("XMH_COMMAND_VAR"):GetInt() or GetConVar("XMH_COMMAND_VAR"):GetFloat(),
+    value           = GetConVar("XMH_COMMAND_VAR"):GetInt() or GetConVar("XMH_COMMAND_VAR"):GetFloat(),
     cheat           = Boolean,
-    var_type        = "int2" or "int16" or "float", ***
+    var_type        = "int2" or "int16" or "float",
     func            = String,
     admin           = Boolean,
   },
 
 default and value:
     -- "GetInt()" or "GetFloat()" will depend on what var_type we'll choose
-value:
-    -- It has to be set to "nil" if the XMH_COMMAND_VAR is marked as "Server" in the xmh_cl.lua file, "Console variables" section
 var_type:
     -- 2 bits = 0 or 1
     -- 16 bits = 65536 max value
@@ -84,9 +82,9 @@ Hook commands (client)
   ["XMH_COMMAND_VAR"] = {
     command_type    = "hook"
     category        = XMH_CATEGORY,
-    default         = GetConVar("XMH_COMMAND_VAR"):GetInt() or Number,
+    default         = GetConVar("XMH_COMMAND_VAR"):GetInt(),
     value           = GetConVar("XMH_COMMAND_VAR"):GetInt(),
-    value2          = String, *
+    value2          = String,
     cheat           = Boolean
     func            = Fuction,
     admin           = Boolean
@@ -94,62 +92,21 @@ Hook commands (client)
 
 value2:
     -- This field has to be the hook name
-
-________________________________________________________________________
-No defaults options (they never need to be reseted)
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-  ["XMH_COMMAND_VAR or COMMAND"] = {
-    command_type    = "nodefaults",
-    cheat           = Boolean,
-    admin           = Boolean
-  },
-
-
 ]]--
 
 xmh_commands = {
   -- ##################### CLEANUP
-  ["xmh_clearcorpses"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = true
-  },
-  ["xmh_cleardecals"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = false
-  },  
-  ["cl_removedecals"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = false
-  },  
-  ["stopsound"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = false
-  },  
-  ["xmh_repairwindows"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = true
-  },
   ["xmh_cleanup_var"] = {
     command_type    = "net",
     category        = "Cleanup",
     default         = GetConVar("xmh_cleanup_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_cleanup_var"):GetInt(),
     cheat           = false,
     var_type        = "int2",
     func            = "XMH_ClearCorpDec",
     admin           = true,
   },
   -- ##################### DISPLAY
-  ["xmh_crosshair"] = {
-    command_type    = "nodefaults",
-    cheat           = true,
-    admin           = false
-  },
   ["xmh_viewmodel_var"] = {
     command_type    = "function",
     category        = "Display",
@@ -159,20 +116,10 @@ xmh_commands = {
     func            = XMH_ViewWorldModels,
     admin           = false
   },
-  ["xmh_removeweapons_var"] = {
-    command_type    = "net",
-    category        = "Display",
-    default         = GetConVar("xmh_removeweapons_var"):GetInt(),
-    value           = GetConVar("xmh_removeweapons_var"):GetInt(),
-    cheat           = false,
-    var_type        = "int2",
-    func            = "XMH_RemoveWeapons",
-    admin           = true
-  },
   ["r_drawviewmodel"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("r_drawviewmodel"):GetInt(),
     cheat           = true,
     admin           = false
   },
@@ -190,7 +137,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Display",
     default         = GetConVar("xmh_invisibleall_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_invisibleall_var"):GetInt(),
     cheat           = false,
     var_type        = "int2",
     func            = "XMH_InvisibleAll",
@@ -202,8 +149,17 @@ xmh_commands = {
     default         = GetConVar("xmh_toolgun_var"):GetInt(),
     value           = GetConVar("xmh_toolgun_var"):GetInt(),
     cheat           = false,
-    func            = XMH_ToolGun,
+    func            = XMH_ToolGunEffect,
     admin           = false
+  },
+  ["xmh_toolgunmute_var"] = {
+    command_type    = "function",
+    category        = "Display",
+    default         = GetConVar("xmh_toolgunmute_var"):GetInt(),
+    value           = GetConVar("xmh_toolgunmute_var"):GetInt(),
+    cheat           = false,
+    func            = XMH_ToolGunMute,
+    admin           = true
   },
   ["xmh_physgun_var"] = {
     command_type    = "function",
@@ -247,7 +203,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Display",
     default         = GetConVar("xmh_voiceicons_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_voiceicons_var"):GetInt(),
     cheat           = true,
     var_type        = "int2",
     func            = "XMH_SetInt2Command",
@@ -257,7 +213,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Display",
     default         = GetConVar("xmh_footsteps_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_footsteps_var"):GetInt(),
     cheat           = true,
     var_type        = "int2",
     func            = "XMH_SetInt2Command",
@@ -266,49 +222,49 @@ xmh_commands = {
   ["r_drawmodeldecals"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("r_drawmodeldecals"):GetInt(),
     cheat           = false,
     admin           = false
   },
   ["r_drawparticles"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("r_drawparticles"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["r_3dsky"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("r_3dsky"):GetInt(),
     cheat           = false,
     admin           = false
   },
   ["cl_show_splashes"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("cl_show_splashes"):GetInt(),
     cheat           = false,
     admin           = false
   },
   ["r_drawropes"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("r_drawropes"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["r_DrawBeams"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("r_DrawBeams"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["r_drawentities"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 1,
+    default         = GetConVar("r_drawentities"):GetInt(),
     cheat           = true,
     admin           = false
   },
@@ -316,7 +272,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Display",
     default         = GetConVar("xmh_corpses_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_corpses_var"):GetInt(),
     cheat           = false,
     var_type        = "int16",
     func            = "XMH_SetInt16Command",
@@ -324,14 +280,14 @@ xmh_commands = {
   },
   ["hud_deathnotice_time"] = {
     category        = "Display",
-    default         = 6,
+    default         = GetConVar("hud_deathnotice_time"):GetInt(),
     cheat           = false,
     admin           = false
   },
   ["hud_saytext_time"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 12,
+    default         = GetConVar("hud_saytext_time"):GetInt(),
     cheat           = false,
     admin           = false
   },
@@ -347,7 +303,7 @@ xmh_commands = {
   ["cl_detaildist"] = {
     command_type    = "runconsolecommand",
     category        = "Display",
-    default         = 4800,
+    default         = GetConVar("cl_detaildist"):GetInt(),
     cheat           = false,
     admin           = false
   },
@@ -355,7 +311,7 @@ xmh_commands = {
   ["r_flashlightlockposition"] = {
     command_type    = "runconsolecommand",
     category        = "Flashlight",
-    default         = 0,
+    default         = GetConVar("r_flashlightlockposition"):GetInt(),
     cheat           = true,
     admin           = false
   },
@@ -373,40 +329,37 @@ xmh_commands = {
   ["r_flashlightdrawfrustum"] = {
     command_type    = "runconsolecommand",
     category        = "Flashlight",
-    default         = 0,
+    default         = GetConVar("r_flashlightdrawfrustum"):GetInt(),
     cheat           = false,
     admin           = false
   },
   ["r_flashlightnear"] = {
     command_type    = "runconsolecommand",
     category        = "Flashlight",
-    default         = 4,
+    default         = GetConVar("r_flashlightnear"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["r_flashlightfar"] = {
     command_type    = "runconsolecommand",
     category        = "Flashlight",
-    default         = 750,
+    default         = GetConVar("r_flashlightfar"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["r_flashlightfov"] = {
     command_type    = "runconsolecommand",
     category        = "Flashlight",
-    default         = 60,
+    default         = GetConVar("r_flashlightfov"):GetInt(),
     cheat           = true,
     admin           = false
   },
   -- ##################### GENERAL
-  ["xmh_texteditor"] = {
-    command_type    = "nodefaults",
+  ["xmh_textfont_var"] = {
+    command_type    = "runconsolecommand",
+    category        = "General",
+    default         = GetConVar("xmh_textfont_var"):GetInt(),
     cheat           = false,
-    admin           = false
-  },
-  ["xmh_lipsync"] = {
-    command_type    = "nodefaults",
-    cheat           = true,
     admin           = false
   },
   ["xmh_shake_var"] = {
@@ -424,7 +377,7 @@ xmh_commands = {
     default         = GetConVar("xmh_skybox_var"):GetInt(),
     value           = GetConVar("xmh_skybox_var"):GetInt(),
     cheat           = false,
-    func            = XMH_Skybox,
+    func            = XMH_GreenSkybox,
     admin           = false
   },
   ["xmh_save_var"] = {
@@ -436,10 +389,17 @@ xmh_commands = {
     func            = XMH_AutoSave,
     admin           = true
   },
+  ["r_lod"] = {
+    command_type    = "runconsolecommand",
+    category        = "General",
+    default         = GetConVar("r_lod"):GetInt(),
+    cheat           = false,
+    admin           = false
+  },
   ["r_eyesize"] = {
     command_type    = "runconsolecommand",
     category        = "General",
-    default         = 0,
+    default         = GetConVar("r_eyesize"):GetInt(),
     cheat           = false,
     admin           = false
   },
@@ -457,41 +417,26 @@ xmh_commands = {
   ["viewmodel_fov"] = {
     command_type    = "runconsolecommand",
     category        = "General",
-    default         = 54,
+    default         = GetConVar("viewmodel_fov"):GetInt(),
     cheat           = true,
     admin           = false
   },
   -- ##################### NPC MOVEMENT
-  ["npc_select"] = {
-    command_type    = "nodefaults",
-    cheat           = true,
-    admin           = false
-  },
-  ["npc_go"] = {
-    command_type    = "nodefaults",
-    cheat           = true,
-    admin           = false
-  },
   ["xmh_npcwalkrun_var"] = {
     command_type    = "net",
     category        = "NPCMovement",
-    default         = 1,
-    value           = nil,
+    default         = GetConVar("xmh_npcwalkrun_var"):GetInt(),
+    value           = GetConVar("xmh_npcwalkrun_var"):GetInt(),
     cheat           = true,
     var_type        = "int2",
     func            = "XMH_SetInt2Command",
-    admin           = true
-  },
-  ["xmh_pedestrians"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
     admin           = true
   },
   ["xmh_aidisabled_var"] = {
     command_type    = "net",
     category        = "NPCMovement",
     default         = GetConVar("xmh_aidisabled_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_aidisabled_var"):GetInt(),
     cheat           = true,
     var_type        = "int2",
     func            = "XMH_SetInt2Command",
@@ -501,7 +446,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "NPCMovement",
     default         = GetConVar("xmh_aidisable_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_aidisable_var"):GetInt(),
     cheat           = true,
     var_type        = "int2",
     func            = "XMH_AiDisable",
@@ -512,7 +457,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Physics",
     default         = GetConVar("xmh_mode_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_mode_var"):GetInt(),
     cheat           = true,
     var_type        = "int2",
     func            = "XMH_Mode",
@@ -522,7 +467,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Physics",
     default         = GetConVar("xmh_falldamage_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_falldamage_var"):GetInt(),
     cheat           = false,
     var_type        = "int2",
     func            = "XMH_SetInt2Command",
@@ -532,7 +477,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Physics",
     default         = GetConVar("xmh_timescale_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_timescale_var"):GetInt(),
     cheat           = true,
     var_type        = "float",
     func            = "XMH_SetFloatCommand",
@@ -542,7 +487,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Physics",
     default         = GetConVar("xmh_knockback_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_knockback_var"):GetInt(),
     cheat           = true,
     var_type        = "int16",
     func            = "XMH_SetInt16Command",
@@ -551,15 +496,15 @@ xmh_commands = {
   ["physgun_wheelspeed"] = {
     command_type    = "runconsolecommand",
     category        = "Physics",
-    default         = 10,
+    default         = GetConVar("physgun_wheelspeed"):GetInt(),
     cheat           = false,
-    admin           = true
+    admin           = false
   },
   ["xmh_throwforce_var"] = {
     command_type    = "net",
     category        = "Physics",
     default         = GetConVar("xmh_throwforce_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_throwforce_var"):GetInt(),
     cheat           = true,
     var_type        = "int16",
     func            = "XMH_SetInt16Command",
@@ -569,7 +514,7 @@ xmh_commands = {
     command_type    = "net",
     category        = "Physics",
     default         = GetConVar("xmh_noclipspeed_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_noclipspeed_var"):GetInt(),
     cheat           = true,
     var_type        = "int16",
     func            = "XMH_SetInt16Command",
@@ -583,7 +528,7 @@ xmh_commands = {
     cheat           = false,
     var_type        = "int16",
     func            = "XMH_RunOneLineLua",
-    admin           = true
+    admin           = false
   },
   ["xmh_runspeed_var"] = {
     command_type    = "net",
@@ -593,7 +538,7 @@ xmh_commands = {
     cheat           = false,
     var_type        = "int16",
     func            = "XMH_RunOneLineLua",
-    admin           = true
+    admin           = false
   },
   ["xmh_jumpheight_var"] = {
     command_type    = "net",
@@ -603,54 +548,44 @@ xmh_commands = {
     cheat           = false,
     var_type        = "int16",
     func            = "XMH_RunOneLineLua",
-    admin           = true
+    admin           = false
   },
   ["xmh_wfriction_var"] = {
     command_type    = "net",
     category        = "Physics",
     default         = GetConVar("xmh_wfriction_var"):GetInt(),
-    value           = nil,
+    value           = GetConVar("xmh_wfriction_var"):GetInt(),
     cheat           = false,
     var_type        = "int16",
     func            = "XMH_SetInt16Command",
     admin           = true
   },
   -- ##################### SHADOWS
-  ["xmh_shadowreschk"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = false
-  },
-  ["xmh_shadowres"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = false
-  },
   ["mat_slopescaledepthbias_shadowmap"] = {
     command_type    = "runconsolecommand",
     category        = "Shadows",
-    default         = 16,
+    default         = GetConVar("mat_slopescaledepthbias_shadowmap"):GetInt(),
     cheat           = false,
     admin           = false
   },
   ["r_projectedtexture_filter"] = {
     command_type    = "runconsolecommand",
     category        = "Shadows",
-    default         = 2,
+    default         = GetConVar("r_projectedtexture_filter"):GetInt(),
     cheat           = false,
     admin           = false
   },
   ["mat_fullbright"] = {
     command_type    = "runconsolecommand",
     category        = "Shadows",
-    default         = 0,
+    default         = GetConVar("mat_fullbright"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["r_shadowrendertotexture"] = {
     command_type    = "runconsolecommand",
     category        = "Shadows",
-    default         = 0,
+    default         = GetConVar("r_shadowrendertotexture"):GetInt(),
     cheat           = false,
     admin           = false
   },
@@ -667,58 +602,76 @@ xmh_commands = {
   ["cam_showangles"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 0,
+    default         = GetConVar("cam_showangles"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["cam_collision"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 1,
+    default         = GetConVar("cam_collision"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["cam_idealdist"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 150,
+    default         = GetConVar("cam_idealdist"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["cam_idealdistup"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 0,
+    default         = GetConVar("cam_idealdistup"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["cam_idealdistright"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 0,
+    default         = GetConVar("cam_idealdistright"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["cam_idealpitch"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 0,
+    default         = GetConVar("cam_idealpitch"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["cam_idealyaw"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 0,
+    default         = GetConVar("cam_idealyaw"):GetInt(),
     cheat           = true,
     admin           = false
   },
   ["cam_ideallag"] = {
     command_type    = "runconsolecommand",
     category        = "ThirdPerson",
-    default         = 4,
+    default         = GetConVar("cam_ideallag"):GetInt(),
     cheat           = true,
     admin           = false
+  },
+  -- ##################### WEAPONS
+  ["xmh_editallweapons_var"] = {
+    command_type    = "runconsolecommand",
+    category        = "Weapons",
+    default         = GetConVar("xmh_editallweapons_var"):GetInt(),
+    cheat           = false,
+    admin           = false
+  },
+  ["xmh_editweaponsallplys_var"] = {
+    command_type    = "net",
+    category        = "Weapons",
+    default         = GetConVar("xmh_editweaponsallplys_var"):GetInt(),
+    value           = GetConVar("xmh_editweaponsallplys_var"):GetInt(),
+    cheat           = false,
+    var_type        = "int2",
+    func            = "XMH_SetInt2Command",
+    admin           = true
   },
   -- ##################### DEFAULTS
   ["xmh_clcleanup_var"] = {
@@ -777,23 +730,21 @@ xmh_commands = {
     cheat           = false,
     admin           = false
   },
-  ["xmh_cleartp_var"] = {
+  ["xmh_cltp_var"] = {
     command_type    = "function",
     category        = "Defaults",
-    value           = GetConVar("xmh_cleartp_var"):GetInt(),
+    value           = GetConVar("xmh_cltp_var"):GetInt(),
     value2          = "ThirdPerson",
     cheat           = false,
     admin           = false
   },
-  ["xmh_defaults"] = {
-    command_type    = "nodefaults",
+  ["xmh_clweapons_var"] = {
+    command_type    = "function",
+    category        = "Defaults",
+    value           = GetConVar("xmh_clweapons_var"):GetInt(),
+    value2          = "Weapons",
     cheat           = false,
     admin           = false
-  },
-  ["xmh_defaultsall"] = {
-    command_type    = "nodefaults",
-    cheat           = false,
-    admin           = true
   },
   -- ##################### CVAR ONLY
   ["xmh_make_invisibility_admin_only_var"] = {
