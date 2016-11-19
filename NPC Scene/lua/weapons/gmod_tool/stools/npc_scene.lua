@@ -31,7 +31,7 @@ TOOL.Information = {
 if ( CLIENT ) then
     language.Add( "Tool.npc_scene.name", "NPC Scene" )
     language.Add( "Tool.npc_scene.desc", "Make NPCs act using \".vcd\" files!" )
-    language.Add( "Tool.npc_scene.left", "Left click to play entered scene." )
+    language.Add( "Tool.npc_scene.left", "Left click to play the entered scene." )
     language.Add( "Tool.npc_scene.right", "Right click to set the actor name." )
     language.Add( "Tool.npc_scene.reload", "Reload to stop a scene." )
 end
@@ -41,8 +41,11 @@ end
 -- -----------
 
 local SceneListPanel
--- Table for controlling keys, NPC reloading and name printing
+-- Table for controlling keys, NPC reloading and name printing.
 local npcscene_ent_table = {}
+-- Table for listing the scenes mounted in the server.
+local npcscene_scenes = {}
+local npcscene_scenes_json = ""
 
 -- -----------------
 -- GENERAL FUNCTIONS
@@ -89,7 +92,6 @@ end
 -- Reloads NPCs so we can apply new scenes.
 local function ReloadEntity( ply, ent )
     if ( SERVER ) then
-
         local Dupe = {}
 
         Dupe = duplicator.Copy( ent )
@@ -117,22 +119,43 @@ local function IsValidEnt( tr )
 end
 
 -- Populates the scenes list.
-local function ParseDir( t, dir, ext )
-    if ( CLIENT ) then
+local function ParseDir( sctable, dir, ext )
+    if ( SERVER ) then
         local files, dirs = file.Find( dir .. "*" , "GAME" )
         for _, fdir in pairs( dirs ) do
-            local n = t:AddNode( fdir )
-            ParseDir( n, dir .. fdir .. "/", ext )
-            n:SetExpanded( false )
+            sctable[fdir] = {}
+            ParseDir( sctable[fdir], dir .. fdir .. "/", ext )
         end
         for k,v in pairs( files ) do
-            local n = t:AddNode( v )
-            local arq = dir..v
-            n.DoClick = function()
-                RunConsoleCommand( "npc_scene_scene", arq )
+            if ( string.GetExtensionFromFilename( v ) == "vcd" ) then
+                local arq = dir..v
+                local data = { File = v, Path = arq }
+                table.insert( sctable, data )
             end
         end
     end
+end
+
+-- Populates the scenes list.
+local function SetScenes( t, sctable )
+    if ( CLIENT ) then
+        for k, v in pairs( sctable ) do
+            if ( v.File ) then
+                local n = t:AddNode( v.File )
+                n.DoClick = function()
+                    RunConsoleCommand( "npc_scene_scene", v.Path )
+                end
+            else
+                local n = t:AddNode( k )
+                SetScenes( n, v )
+            end
+        end
+    end
+end
+
+if ( SERVER ) then
+    ParseDir(npcscene_scenes, "scenes/", ".vcd" )
+    npcscene_scenes_json = util.TableToJSON( npcscene_scenes )
 end
 
 -- ---------
@@ -140,7 +163,8 @@ end
 -- ---------
 
 if ( SERVER ) then
-    util.AddNetworkString( "net_set_table" )
+    util.AddNetworkString( "net_set_ent_table" )
+    util.AddNetworkString( "net_set_scenes_table" )
     util.AddNetworkString( "npc_scene_key_hook" )
     util.AddNetworkString( "npc_scene_play" )
 end
@@ -161,16 +185,29 @@ if ( SERVER ) then
     end )
 end
 
--- Sets the ent table for new palyers.
+-- Sets the ent table.
 if ( CLIENT ) then
-    net.Receive( "net_set_table", function()
-        ent = net.ReadEntity()
-        data = net.ReadTable()
+    net.Receive( "net_set_ent_table", function()
+        local ent_table = net.ReadTable()
         
-        ent.npcscene = data
+        for _,v in pairs( ent_table ) do
+            v.ent.npcscene = v.npcscene
         
-        table.insert( npcscene_ent_table, ent.npcscene.Index_key, ent )
+            table.insert( npcscene_ent_table, v.ent.npcscene.Index_key, v.ent )
+        end
     end )
+end
+
+-- Sets the scenes table for new palyers.
+if ( CLIENT ) then
+    net.Receive("net_set_scenes_table",function()
+        local chunk = net.ReadString()
+        local last = net.ReadString()
+        npcscene_scenes_json = npcscene_scenes_json .. chunk
+        if ( last == "LAST" ) then
+            npcscene_scenes = util.JSONToTable( npcscene_scenes_json )
+        end
+    end)
 end
 
 -- Sets the keys ("Tick" hook).
@@ -210,23 +247,44 @@ end
 -- INITIAL HOOKS
 -- -------------
 
--- Sets the ent table for new palyers.
+-- Sets the entity and scene tables on new palyers.
 if ( SERVER ) then
     hook.Add( "PlayerInitialSpawn", "set npc_scene ent table", function ( ply )
-        if ( table.Count( npcscene_ent_table ) > 0 ) then
-            timer.Create( "FSpawnFixNPCScene", 3, 1, function()
+        timer.Create( "FSpawnFixNPCScene", 3, 1, function()
+            -- Entity table
+            if ( table.Count( npcscene_ent_table ) > 0 ) then
+                local t = {}
+
                 for _,v in pairs( npcscene_ent_table ) do
-                    net.Start( "net_set_table" )
-                    net.WriteEntity( v )
-                    net.WriteTable( v.npcscene )
-                    net.Send( ply )
+                    table.insert( t, { ent = v, npcscene = v.npcscene } )
                 end
-            end)
-        end
-    end)
+                net.Start( "net_set_ent_table" )
+                net.WriteTable( t )
+                net.Send( ply )
+            end
+
+            -- Scenes table (It's big, so I'm sending in json chunks)
+            local chunks = {}
+            local curTable = ""
+            curTable = npcscene_scenes_json
+            for i = 1, math.ceil( string.len( npcscene_scenes_json ) / 1024 ), 1 do
+                table.insert( chunks, string.sub( curTable, 1, 1024 ) )
+                curTable = string.sub( curTable, 1025 )
+            end
+            for i,v in pairs( chunks ) do
+                net.Start( "net_set_scenes_table" )
+                net.WriteString( v )
+                if ( i == #chunks ) then
+                    net.WriteString( "LAST" )
+                end
+                net.Send( ply )
+            end
+
+        end )
+    end )
 end
 
--- Renders the NPC names
+-- Renders the NPC names.
 if ( CLIENT ) then
     hook.Add("HUDPaint", "ShowNPCHealthAboveHeadNPCScene", function()
         if ( GetConVar( "npc_scene_render" ):GetInt() == 1 ) then
@@ -246,12 +304,12 @@ if ( CLIENT ) then
                     end
 
                     if ( ( ent.npcscene.name != "" ) and ( LocalPlayer():GetPos():Distance( ent:GetPos() ) < 300 ) ) then
-                        draw.DrawText( ent.npcscene.name, "TargetID", drawposscreen.x, drawposscreen.y, Color( 255, 255, 255, 255 ) )
+                        draw.DrawText( ent.npcscene.name, "TargetID", drawposscreen.x - string.len(ent.npcscene.name) * 4, drawposscreen.y - 15, Color( 255, 255, 255, 255 ) )
                     end
                 end
             end
         end
-    end)
+    end )
 end
 
 -- --------------
@@ -270,15 +328,15 @@ function TOOL:LeftClick( tr )
     local ent = tr.Entity
     local scene = string.gsub( self:GetClientInfo( "scene" ), ".vcd", "" )
     local name = ""
-    
-    -- Loads the actor name (if there is one)
+
+    -- Loads the actor name (if there is one).
     if ( ent.npcscene ) then
         if ( ent.npcscene.name ) then
             name = ent.npcscene.name
         end
     end
     
-    -- Reloads the scenes (by deleting the loops and reloading the NPCs)
+    -- Reloads the scenes (by deleting the loops and reloading the NPCs).
     if ( ent.npcscene ) then 
         if ( ent.npcscene.Active == 1 and self:GetClientNumber( "multiple" ) == 0 ) then
             NPCSceneTimerStop( ent.npcscene.Index_loop )
@@ -298,18 +356,17 @@ function TOOL:LeftClick( tr )
         Start      = self:GetClientNumber( "start" ),
     }
 
-    timer.Create( "AvoidSpawnErrorsNPCSceneLeft", 0.1, 1, function() -- Timer to avoid spawning errors
+    timer.Create( "AvoidSpawnErrorsNPCSceneLeft", 0.1, 1, function() -- Timer to avoid spawning errors.
         ent.npcscene = data
         
         -- Register the entity in our internal table.
         table.insert( npcscene_ent_table, ent:EntIndex(), ent )
-        net.Start( "net_set_table" )
-        net.WriteEntity( ent )
-        net.WriteTable( ent.npcscene )
+        net.Start( "net_set_ent_table" )
+        net.WriteTable( { { ent = ent, npcscene = ent.npcscene } } )
         net.Send( ply )
 
         -- Plays the scene.
-        timer.Create( "AvoidSpawnErrorsNPCSceneLeft2", 0.15, 1, function() -- Timer to avoid spawning errors
+        timer.Create( "AvoidSpawnErrorsNPCSceneLeft2", 0.15, 1, function() -- Timer to avoid spawning errors.
             if ( ent.npcscene.Key == 0 ) then -- Not using keys? Let's play it.
                 NPCSceneStart( ent )
             else -- Using keys? Let's bind it.
@@ -317,8 +374,8 @@ function TOOL:LeftClick( tr )
                 net.WriteEntity( ent )
                 net.Send( ply )
             end
-        end)
-    end)
+        end )
+    end )
 
     return true
 end
@@ -335,8 +392,8 @@ function TOOL:RightClick( tr )
     local name = self:GetClientInfo( "actor" )
 
 
-    timer.Create( "AvoidSpawnErrorsNPCSceneRight", 0.15, 1, function() -- Timer to avoid spawning errors
-        -- Sets the name
+    timer.Create( "AvoidSpawnErrorsNPCSceneRight", 0.15, 1, function() -- Timer to avoid spawning errors.
+        -- Sets the name.
         ent:SetName( name )
 
         -- Adds the name to the entity.
@@ -349,12 +406,11 @@ function TOOL:RightClick( tr )
         -- Register the entity in our internal table.
         table.insert( npcscene_ent_table, ent:EntIndex(), ent )
         for _, v in pairs(player.GetAll()) do
-            net.Start( "net_set_table" )
-            net.WriteEntity( ent )
-            net.WriteTable( ent.npcscene )
+            net.Start( "net_set_ent_table" )
+            net.WriteTable( { { ent = ent, npcscene = ent.npcscene } } )
             net.Send( v )
         end
-    end)
+    end )
 
     return true
 end
@@ -366,37 +422,42 @@ function TOOL:Reload( tr )
 
     local ent = tr.Entity
 
-    -- Deletes the loops and reloads the NPCs
+    -- Deletes the loops and reloads the NPCs.
     if ( ent.npcscene ) then 
-        timer.Create( "AvoidSpawnErrorsNPCSceneReload", 0.15, 1, function() -- Timer to avoid spawning errors
-            NPCSceneTimerStop( ent.npcscene.Index_loop )
-            ReloadEntity( self:GetOwner(), ent )
-        end)
+        if ( SERVER ) then
+            timer.Create( "AvoidSpawnErrorsNPCSceneReload", 0.15, 1, function() -- Timer to avoid spawning errors.
+                if ( ent.npcscene.name ) then
+                    ent:SetName("")
+                end
+                NPCSceneTimerStop( ent.npcscene.Index_loop )
+                ReloadEntity( self:GetOwner(), ent )
+            end )
+        end
+        return true
     else
         return false
     end
-
-    return true
 end
 
 -- Builds CPanel.
 if ( CLIENT ) then
     function TOOL.BuildCPanel( CPanel )
-        CPanel:AddControl( "Header"  , { Text  = '#Tool.npc_scene.name', Description = '#Tool.npc_scene.desc' } )
-        CPanel:AddControl( "Numpad"  , { Label = "Scene key", Command = "npc_scene_key" } )
-        CPanel:AddControl( "TextBox" , { Label = "Scene Name" , Command = "npc_scene_scene", MaxLength = 500 } )
-        CPanel:AddControl( "TextBox" , { Label = "Actor Name" , Command = "npc_scene_actor", MaxLength = 500 } )
-        CPanel:AddControl( "Slider"  , { Label = "Loop", Type = "int", Min = "0", Max = "100", Command = "npc_scene_loop"} )
-        CPanel:AddControl( "CheckBox", { Label = "Allow Applying Scenes Multiple Times", Command = "npc_scene_multiple" } )
-        CPanel:AddControl( "CheckBox", { Label = "Start On (When Using a Key)", Command = "npc_scene_start" } )
-        CPanel:AddControl( "CheckBox", { Label = "Show Actors' Names Over Their Heads", Command = "npc_scene_render" } )
-        CPanel:Help      ("")
+        CPanel:AddControl ( "Header"  , { Text  = '#Tool.npc_scene.name', Description = '#Tool.npc_scene.desc' } )
+        CPanel:AddControl ( "Numpad"  , { Label = "Scene key", Command = "npc_scene_key" } )
+        CPanel:AddControl ( "TextBox" , { Label = "Scene Name" , Command = "npc_scene_scene", MaxLength = 500 } )
+        CPanel:AddControl ( "TextBox" , { Label = "Actor Name" , Command = "npc_scene_actor", MaxLength = 30 } )
+        if ( game.SinglePlayer() ) then
+            CPanel:ControlHelp( "\nApply a scene and open the console to see which actor names you need to set." )
+        end
+        CPanel:AddControl ( "Slider"  , { Label = "Loop", Type = "int", Min = "0", Max = "100", Command = "npc_scene_loop"} )
+        CPanel:AddControl ( "CheckBox", { Label = "Allow Applying Scenes Multiple Times", Command = "npc_scene_multiple" } )
+        CPanel:AddControl ( "CheckBox", { Label = "Start On (When Using a Key)", Command = "npc_scene_start" } )
+        CPanel:AddControl ( "CheckBox", { Label = "Show Actors' Names Over Their Heads", Command = "npc_scene_render" } )
+        CPanel:Help       ("")
         local ctrl = vgui.Create( "DTree", CPanel )
             ctrl:Dock( FILL )
             ctrl:DockMargin( 5, 0, 5, 0 )
         local node = ctrl:AddNode( "Scenes! (click one to select)" )
-        ParseDir( node, "scenes/", ".vcd" )
+        SetScenes( node, npcscene_scenes )
     end
 end
-
--- Manter tabela limpa
