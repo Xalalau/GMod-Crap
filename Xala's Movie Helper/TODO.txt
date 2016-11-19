@@ -5,3 +5,4 @@ http://steamcommunity.com/sharedfiles/filedetails/?id=442747507&searchtext=NPC -
 - Check admin mods and similar tools for ideas (like Bill Gates does) 
 - Try again to hide the physgun glow when it's set to invisible 
 - If some part of a translation is missing, make it English
+- Add Source Recorder stuff? (like https://garrysmods.org/download/2223/source-recorder-menu-v2)
