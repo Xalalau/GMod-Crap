@@ -1,7 +1,7 @@
 --[[ 
 Credits: tool originally created by Deco and continued by Xalalau
 
-Version 1.2, by Deco: http://www.garrysmod.org/downloads/?a=view&id=42593 
+Version 1.2 by Deco: http://www.garrysmod.org/downloads/?a=view&id=42593 
 Version 1.3 and 1.4 by Xalalau: http://steamcommunity.com/sharedfiles/filedetails/?id=121182342
 
 https://github.com/xalalau/GMod/tree/master/NPC%20Scene
@@ -95,7 +95,7 @@ local function ReloadEntity( ply, ent )
         local Dupe = {}
 
         Dupe = duplicator.Copy( ent )
-        SafeRemoveEntity(ent)
+        SafeRemoveEntity( ent )
         duplicator.Paste( ply, Dupe.Entities, Dupe.Constraints )
 
         ent = ply:GetEyeTrace().Entity
@@ -128,7 +128,7 @@ local function ParseDir( sctable, dir, ext )
         end
         for k,v in pairs( files ) do
             if ( string.GetExtensionFromFilename( v ) == "vcd" ) then
-                local arq = dir..v
+                local arq = dir .. v
                 local data = { File = v, Path = arq }
                 table.insert( sctable, data )
             end
@@ -203,6 +203,7 @@ if ( CLIENT ) then
     net.Receive("net_set_scenes_table",function()
         local chunk = net.ReadString()
         local last = net.ReadString()
+
         npcscene_scenes_json = npcscene_scenes_json .. chunk
         if ( last == "LAST" ) then
             npcscene_scenes = util.JSONToTable( npcscene_scenes_json )
@@ -267,7 +268,7 @@ if ( SERVER ) then
             local chunks = {}
             local curTable = ""
             curTable = npcscene_scenes_json
-            for i = 1, math.ceil( string.len( npcscene_scenes_json ) / 1024 ), 1 do
+            for i = 1,math.ceil( string.len( npcscene_scenes_json ) / 1024 ),1 do
                 table.insert( chunks, string.sub( curTable, 1, 1024 ) )
                 curTable = string.sub( curTable, 1025 )
             end
@@ -405,7 +406,7 @@ function TOOL:RightClick( tr )
 
         -- Register the entity in our internal table.
         table.insert( npcscene_ent_table, ent:EntIndex(), ent )
-        for _, v in pairs(player.GetAll()) do
+        for _, v in pairs( player.GetAll() ) do
             net.Start( "net_set_ent_table" )
             net.WriteTable( { { ent = ent, npcscene = ent.npcscene } } )
             net.Send( v )
@@ -427,7 +428,7 @@ function TOOL:Reload( tr )
         if ( SERVER ) then
             timer.Create( "AvoidSpawnErrorsNPCSceneReload", 0.15, 1, function() -- Timer to avoid spawning errors.
                 if ( ent.npcscene.name ) then
-                    ent:SetName("")
+                    ent:SetName( "" )
                 end
                 NPCSceneTimerStop( ent.npcscene.Index_loop )
                 ReloadEntity( self:GetOwner(), ent )
