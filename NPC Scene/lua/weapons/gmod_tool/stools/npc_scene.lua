@@ -461,7 +461,6 @@ if ( CLIENT ) then
             ctrl:Dock( FILL )
             ctrl:DockMargin( 5, 0, 5, 0 )
         local node = ctrl:AddNode( "Scenes! (click one to select)" )
-        timer.Create( "LoadScenes", 0.25, 0, function() -- Timer to ensure the loading of the scenes list on the client
             if ( table.Count( npcscene_scenes ) > 0 ) then
                 SetScenes( node, npcscene_scenes )
                 timer.Stop( "LoadScenes" )
