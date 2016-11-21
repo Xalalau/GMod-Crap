@@ -273,14 +273,12 @@ if ( SERVER ) then
                 curTable = string.sub( curTable, 1025 )
             end
             for i,v in pairs( chunks ) do
-                timer.Create( "NPC_ORB_" .. i, i * 0.03, 1, function() -- Timer to solve "overflowed reliable buffer" error
-                    net.Start( "net_set_scenes_table" )
-                    net.WriteString( v )
-                    if ( i == #chunks ) then
-                        net.WriteString( "LAST" )
-                    end
-                    net.Send( ply )
-                end )
+                net.Start( "net_set_scenes_table" )
+                net.WriteString( v )
+                if ( i == #chunks ) then
+                    net.WriteString( "LAST" )
+                end
+                net.Send( ply )
             end
 
         end )
@@ -461,10 +459,6 @@ if ( CLIENT ) then
             ctrl:Dock( FILL )
             ctrl:DockMargin( 5, 0, 5, 0 )
         local node = ctrl:AddNode( "Scenes! (click one to select)" )
-            if ( table.Count( npcscene_scenes ) > 0 ) then
-                SetScenes( node, npcscene_scenes )
-                timer.Stop( "LoadScenes" )
-            end
-        end )
+        SetScenes( node, npcscene_scenes )
     end
 end
