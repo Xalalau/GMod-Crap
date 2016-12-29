@@ -40,12 +40,43 @@ end
 -- GLOBAL VARS
 -- -----------
 
-local SceneListPanel
 -- Table for controlling keys, NPC reloading and name printing.
 local npcscene_ent_table = {}
 -- Table for listing the scenes mounted in the server.
 local npcscene_scenes = {}
 local npcscene_scenes_json = ""
+-- Client Derma
+local SceneListPanel
+local ctrl
+
+-- -----------
+-- DERMA SETUP
+-- -----------
+
+if ( CLIENT ) then
+    SceneListPanel = vgui.Create( "DFrame" )
+        SceneListPanel:SetTitle( "Scenes" )
+        SceneListPanel:SetSize( 300, 700 )
+        SceneListPanel:SetPos( 10, 10 )
+        SceneListPanel:SetDeleteOnClose( false )
+        SceneListPanel:SetVisible( false )
+
+    ctrl = vgui.Create( "DTree", SceneListPanel )
+        ctrl:SetPadding( 5 )
+        ctrl:SetSize( 300, 675 )
+        ctrl:SetPos( 0, 25 )
+end
+
+local function ListScenes()
+    if ( CLIENT ) then
+        SceneListPanel:SetVisible( true )
+        SceneListPanel:MakePopup()
+    end
+end
+
+if ( CLIENT ) then
+    concommand.Add( "npc_scene_list", ListScenes )
+end
 
 -- -----------------
 -- GENERAL FUNCTIONS
@@ -118,13 +149,30 @@ local function IsValidEnt( tr )
     return false
 end
 
--- Populates the scenes list.
-local function ParseDir( sctable, dir, ext )
+-- Populates the scenes list in Singleplayer.
+local function ParseDirSingle( t, dir, ext )
+    if ( CLIENT ) then
+        local files, dirs = file.Find( dir.."*", "GAME" )
+        for _, fdir in pairs( dirs ) do
+            local n = t:AddNode( fdir )
+            ParseDirSingle( n, dir..fdir.."/", ext )
+            n:SetExpanded( false )
+        end
+        for k,v in pairs( files ) do
+            local n = t:AddNode( v )
+            local arq = dir..v
+            n.DoClick = function() RunConsoleCommand( "npc_scene_scene", arq ) end
+        end 
+    end
+end
+
+-- Prepares the scenes table in Multiplayer.
+local function ParseDirMulti( sctable, dir, ext )
     if ( SERVER ) then
         local files, dirs = file.Find( dir .. "*" , "GAME" )
         for _, fdir in pairs( dirs ) do
             sctable[fdir] = {}
-            ParseDir( sctable[fdir], dir .. fdir .. "/", ext )
+            ParseDirMulti( sctable[fdir], dir .. fdir .. "/", ext )
         end
         for k,v in pairs( files ) do
             if ( string.GetExtensionFromFilename( v ) == "vcd" ) then
@@ -136,8 +184,8 @@ local function ParseDir( sctable, dir, ext )
     end
 end
 
--- Populates the scenes list.
-local function SetScenes( t, sctable )
+-- Populates the scenes list in Multiplayer.
+local function SetScenesMulti( t, sctable )
     if ( CLIENT ) then
         for k, v in pairs( sctable ) do
             if ( v.File ) then
@@ -147,15 +195,21 @@ local function SetScenes( t, sctable )
                 end
             else
                 local n = t:AddNode( k )
-                SetScenes( n, v )
+                SetScenesMulti( n, v )
             end
         end
     end
 end
 
+-- --------------
+-- Server Loading
+-- --------------
+
 if ( SERVER ) then
-    ParseDir(npcscene_scenes, "scenes/", ".vcd" )
-    npcscene_scenes_json = util.TableToJSON( npcscene_scenes )
+    if not ( game.SinglePlayer() ) then
+        ParseDirMulti( npcscene_scenes, "scenes/", ".vcd" )
+        npcscene_scenes_json = util.TableToJSON( npcscene_scenes )
+    end
 end
 
 -- ---------
@@ -289,7 +343,7 @@ end
 
 -- Renders the NPC names.
 if ( CLIENT ) then
-    hook.Add("HUDPaint", "ShowNPCHealthAboveHeadNPCScene", function()
+    hook.Add( "HUDPaint", "ShowNPCHealthAboveHeadNPCScene", function()
         if ( GetConVar( "npc_scene_render" ):GetInt() == 1 ) then
             for _,ent in pairs( npcscene_ent_table ) do
                 if ( ent:IsValid() ) then
@@ -307,7 +361,7 @@ if ( CLIENT ) then
                     end
 
                     if ( ( ent.npcscene.name != "" ) and ( LocalPlayer():GetPos():Distance( ent:GetPos() ) < 300 ) ) then
-                        draw.DrawText( ent.npcscene.name, "TargetID", drawposscreen.x - string.len(ent.npcscene.name) * 4, drawposscreen.y - 15, Color( 255, 255, 255, 255 ) )
+                        draw.DrawText( ent.npcscene.name, "TargetID", drawposscreen.x - string.len( ent.npcscene.name ) * 4, drawposscreen.y - 15, Color( 255, 255, 255, 255 ) )
                     end
                 end
             end
@@ -453,19 +507,21 @@ if ( CLIENT ) then
             CPanel:ControlHelp( "\nApply a scene and open the console to see which actor names you need to set." )
         end
         CPanel:AddControl ( "Slider"  , { Label = "Loop", Type = "int", Min = "0", Max = "100", Command = "npc_scene_loop"} )
-        CPanel:AddControl ( "CheckBox", { Label = "Allow Applying Scenes Multiple Times", Command = "npc_scene_multiple" } )
+        CPanel:AddControl ( "CheckBox", { Label = "Apply Scenes Multiple Times", Command = "npc_scene_multiple" } )
         CPanel:AddControl ( "CheckBox", { Label = "Start On (When Using a Key)", Command = "npc_scene_start" } )
         CPanel:AddControl ( "CheckBox", { Label = "Show Actors' Names Over Their Heads", Command = "npc_scene_render" } )
         CPanel:Help       ("")
-        local ctrl = vgui.Create( "DTree", CPanel )
-            ctrl:Dock( FILL )
-            ctrl:DockMargin( 5, 0, 5, 0 )
+        CPanel:AddControl ( "Button" , { Text  = "List Scenes", Command = "npc_scene_list" } )
         local node = ctrl:AddNode( "Scenes! (click one to select)" )
-        timer.Create( "LoadScenes", 0.25, 0, function() -- Timer to ensure the loading of the scenes list on the client
-            if ( table.Count( npcscene_scenes ) > 0 ) then
-                SetScenes( node, npcscene_scenes )
-                timer.Stop( "LoadScenes" )
-            end
-        end )
+        if ( game.SinglePlayer() ) then
+            ParseDirSingle( node, "scenes/", ".vcd" )
+        else
+            timer.Create( "LoadScenes", 1, 0, function() -- Timer to ensure the loading of the scenes list on the client
+                if ( table.Count( npcscene_scenes ) > 0 ) then
+                    SetScenesMulti( node, npcscene_scenes )
+                    timer.Stop( "LoadScenes" )
+                end
+            end )
+        end
     end
 end
