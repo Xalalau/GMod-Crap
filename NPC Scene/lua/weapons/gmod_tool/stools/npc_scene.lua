@@ -327,7 +327,7 @@ if ( SERVER ) then
                 curTable = string.sub( curTable, 1025 )
             end
             for i,v in pairs( chunks ) do
-                timer.Create( "NPC_ORB_" .. i, i * 0.03, 1, function() -- Timer to solve "overflowed reliable buffer" error
+                timer.Create( "NPC_ORB_" .. i, i * 0.05, 1, function() -- Timer to solve "overflowed reliable buffer" error
                     net.Start( "net_set_scenes_table" )
                     net.WriteString( v )
                     if ( i == #chunks ) then
@@ -413,7 +413,7 @@ function TOOL:LeftClick( tr )
         Start      = self:GetClientNumber( "start" ),
     }
 
-    timer.Create( "AvoidSpawnErrorsNPCSceneLeft", 0.1, 1, function() -- Timer to avoid spawning errors.
+    timer.Create( "AvoidSpawnErrorsNPCSceneLeft", 0.25, 1, function() -- Timer to avoid spawning errors.
         ent.npcscene = data
         
         -- Register the entity in our internal table.
@@ -423,7 +423,7 @@ function TOOL:LeftClick( tr )
         net.Send( ply )
 
         -- Plays the scene.
-        timer.Create( "AvoidSpawnErrorsNPCSceneLeft2", 0.15, 1, function() -- Timer to avoid spawning errors.
+        timer.Create( "AvoidSpawnErrorsNPCSceneLeft2", 0.25, 1, function() -- Timer to avoid spawning errors.
             if ( ent.npcscene.Key == 0 ) then -- Not using keys? Let's play it.
                 NPCSceneStart( ent )
             else -- Using keys? Let's bind it.
@@ -449,7 +449,7 @@ function TOOL:RightClick( tr )
     local name = self:GetClientInfo( "actor" )
 
 
-    timer.Create( "AvoidSpawnErrorsNPCSceneRight", 0.15, 1, function() -- Timer to avoid spawning errors.
+    timer.Create( "AvoidSpawnErrorsNPCSceneRight", 0.25, 1, function() -- Timer to avoid spawning errors.
         -- Sets the name.
         ent:SetName( name )
 
@@ -482,7 +482,7 @@ function TOOL:Reload( tr )
     -- Deletes the loops and reloads the NPCs.
     if ( ent.npcscene ) then 
         if ( SERVER ) then
-            timer.Create( "AvoidSpawnErrorsNPCSceneReload", 0.15, 1, function() -- Timer to avoid spawning errors.
+            timer.Create( "AvoidSpawnErrorsNPCSceneReload", 0.25, 1, function() -- Timer to avoid spawning errors.
                 if ( ent.npcscene.name ) then
                     ent:SetName( "" )
                 end
