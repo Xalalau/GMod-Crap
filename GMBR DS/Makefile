@@ -17,6 +17,7 @@ WRAPPER=comp-wrapper
 
 ifeq ($(SYSTEM),)
 	SYSTEM=Linux
+	FORCEDSYSTEM=true
 endif
 ifeq ($(SYSTEM),Linux)
 	CC64=gcc
@@ -73,18 +74,28 @@ DS32 = ${BINDIR}/GMBR_DS_32bits${EXT}
 
 # Chamadas principais
 GMBR_DS_ZIP:
-	$(MAKE) -C ./ MAKE_ZIP SYSTEM=Linux
-	$(MAKE) -C ./ MAKE_ZIP SYSTEM=Windows
-GMBR_DS_64: MINGW XALATECA COMPWRAPPER ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64}
+	@echo "[!] Gerando arquivo(s) zip..."
+ifeq ($(FORCEDSYSTEM),true)
+	$(MAKE) -C ./ CRIAR_ZIP SYSTEM=Linux
+	$(MAKE) -C ./ CRIAR_ZIP SYSTEM=Windows
+else
+	$(MAKE) -C ./ CRIAR_ZIP SYSTEM=$(SYSTEM)
+endif
+GMBR_DS_64: MINGW XALATECA COMPWRAPPER MENSAGEM_64 ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64}
 	${WRAPPER} ${CC64} ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64} -o ${DS64}
-GMBR_DS_32: MINGW XALATECA COMPWRAPPER ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32}
+GMBR_DS_32: MINGW XALATECA COMPWRAPPER MENSAGEM_32 ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32}
 	${WRAPPER} ${CC32} ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32} -o ${DS32} ${FLAG32}
 clean:
+ifeq "$(wildcard $(LIBDIR) )" "$(LIBDIR)"
 	rm -r ${LIBDIR}
+endif
+ifeq "$(wildcard $(BLDDIR) )" "$(BLDDIR)"
 	rm -r ${BLDDIR}
+endif
 
 # Chamadas secundarias
-MAKE_ZIP: GMBR_DS_32 GMBR_DS_64
+CRIAR_ZIP: GMBR_DS_32 GMBR_DS_64
+	@echo "\n[!] Gerando arquivo \"${SYSTEM}_GMBR_DS_${DSVERSION}.zip\"..."
 	mkdir -p Servidor/cfg
 ifeq ($(SYSTEM),Windows)
 	mkdir Servidor/bin
@@ -104,23 +115,27 @@ endif
 	zip -r ${SYSTEM}_GMBR_DS_${DSVERSION}.zip Servidor
 	rm -r Servidor
 	mv ${SYSTEM}_GMBR_DS_${DSVERSION}.zip ${ZIPDIR}
+MENSAGEM_64:
+	@echo "\n[!] Compilando GMBR DS 64 bits..."
 ${O_RESOURCE_64}: ${RESOURCE}
 	${WRAPPER} ${CCRES64} ${RESOURCE} -O coff -o ${O_RESOURCE_64}
-${O_RESOURCE_32}: ${RESOURCE}
-	${WRAPPER} ${CCRES32} ${RESOURCE} -O coff -o ${O_RESOURCE_32}
 ${O_GERAL_64}: ${LIB_GERAL}
 	${WRAPPER} ${CC64} ${OBJDIR64} -c ${LIB_GERAL}
 ${O_INIZATOR_64}: ${LIB_INIZATOR}
 	${WRAPPER} ${CC64} ${OBJDIR64} -c ${LIB_INIZATOR}
 ${O_GMBRDS_64}: ${SRC_GMBRDS}
 	${WRAPPER} ${CC64} ${OBJDIR64} -c ${SRC_GMBRDS}
+MENSAGEM_32:
+	@echo "\n[!] Compilando GMBR DS 32 bits..."
 ${O_GERAL_32}: ${LIB_GERAL}
 	${WRAPPER} ${CC32} ${OBJDIR32} -c ${LIB_GERAL} ${FLAG32}
 ${O_INIZATOR_32}: ${LIB_INIZATOR}
 	${WRAPPER} ${CC32} ${OBJDIR32} -c ${LIB_INIZATOR} ${FLAG32}
 ${O_GMBRDS_32}: ${SRC_GMBRDS}
 	${WRAPPER} ${CC32} ${OBJDIR32} -c ${SRC_GMBRDS} ${FLAG32}
-
+${O_RESOURCE_32}: ${RESOURCE}
+	${WRAPPER} ${CCRES32} ${RESOURCE} -O coff -o ${O_RESOURCE_32}
+	
 # Instalacao de requisitos
 MINGW:
 ifeq ($(SYSTEM),Windows)
@@ -128,7 +143,7 @@ ifndef MINGW_CHECK
 ifndef APT_CHECK
 	$(error "\nInstale o \"mingw-w64\" para poder usar esse makefile!\n")
 endif
-	@echo "[!] Necessário instalar \"mingw-w64\" para compilar binários de Windows..."
+	@echo "\n[!] É necessário instalar o \"mingw-w64\" para compilar binários de Windows..."
 	sudo apt install mingw-w64
 endif
 endif
@@ -138,15 +153,15 @@ ifndef GIT_CHECK
 ifndef APT_CHECK
 	$(error "\nInstale o Git para poder usar esse makefile!\n")
 endif
-	@echo "[!] Necessário instalar \"Git\"..."
+	@echo "\n[!] Necessário instalar \"Git\"..."
 	sudo apt install git
 endif
-	@echo "[!] Baixando repositório \"Xalateca\"..."
+	@echo "\n[!] Baixando repositório \"Xalateca\"..."
 	git clone https://github.com/xalalau/Xalateca.git ${XALDIR}
 endif
 COMPWRAPPER:
 ifndef WRAPPER_CHECK
-	@echo "[!] Instalando script \"comp-wrapper\"..."
+	@echo "\n[!] Instalando script \"comp-wrapper\"..."
 	sudo cp '${XALDIR}/Bash/comp-wrapper/src/comp-wrapper' /usr/bin
 	sudo chmod +x /usr/bin/comp-wrapper
 endif
