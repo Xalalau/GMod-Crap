@@ -30,7 +30,7 @@ ENTRADA2:
 - SYSTEM=Windows
 - SYSTEM=Linux
 
-Nota: A omissão de SYSTEM fará o make criar um executável de Linux por padrão.
+Nota: A omissão da ENTRADA2 fará o make criar um executável de Linux por padrão.
 
 Um exemplo:
 

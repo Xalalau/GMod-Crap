@@ -75,11 +75,12 @@ DS32 = ${BINDIR}/GMBR_DS_32bits${EXT}
 GMBR_DS_ZIP:
 	$(MAKE) -C ./ MAKE_ZIP SYSTEM=Linux
 	$(MAKE) -C ./ MAKE_ZIP SYSTEM=Windows
-GMBR_DS_64: MINGW COMPWRAPPER ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64}
+GMBR_DS_64: MINGW XALATECA COMPWRAPPER ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64}
 	${WRAPPER} ${CC64} ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64} -o ${DS64}
-GMBR_DS_32: MINGW COMPWRAPPER ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32}
+GMBR_DS_32: MINGW XALATECA COMPWRAPPER ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32}
 	${WRAPPER} ${CC32} ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32} -o ${DS32} ${FLAG32}
 clean:
+	rm -r ${LIBDIR}
 	rm -r ${BLDDIR}
 
 # Chamadas secundarias
@@ -127,23 +128,25 @@ ifndef MINGW_CHECK
 ifndef APT_CHECK
 	$(error "\nInstale o \"mingw-w64\" para poder usar esse makefile!\n")
 endif
-	echo "Necessário instalar \"mingw-w64\" para compilar binários de Windows..."
+	@echo "[!] Necessário instalar \"mingw-w64\" para compilar binários de Windows..."
 	sudo apt install mingw-w64
 endif
 endif
-COMPWRAPPER:
+XALATECA:
 ifeq "$(wildcard $(XALDIR) )" ""
 ifndef GIT_CHECK
 ifndef APT_CHECK
 	$(error "\nInstale o Git para poder usar esse makefile!\n")
 endif
-	echo "Necessário instalar \"Git\"..."
+	@echo "[!] Necessário instalar \"Git\"..."
 	sudo apt install git
 endif
-	git clone https://github.com/xalalau/Xalateca.git ${XALDIR};
+	@echo "[!] Baixando repositório \"Xalateca\"..."
+	git clone https://github.com/xalalau/Xalateca.git ${XALDIR}
 endif
+COMPWRAPPER:
 ifndef WRAPPER_CHECK
-	echo "Instalando script \"comp-wrapper\"..."
+	@echo "[!] Instalando script \"comp-wrapper\"..."
 	sudo cp '${XALDIR}/Bash/comp-wrapper/src/comp-wrapper' /usr/bin
 	sudo chmod +x /usr/bin/comp-wrapper
 endif
