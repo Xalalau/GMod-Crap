@@ -11,7 +11,7 @@ Primeiramente, clone o repositório e entre na pasta do projeto:
 
 ```sh
 $ git clone https://github.com/xalalau/GMod.git
-$ cd "~/GMod/GMBR DS"
+$ cd ~/GMod/GMBR\ DS/
 ````
 
 Agora nós temos uma série de opções para escolher. Veja as combinações para de comando para o makefile:
