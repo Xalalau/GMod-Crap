@@ -35,7 +35,7 @@ Nota: A omissão da ENTRADA2 fará o make criar um executável de Linux por padr
 Um exemplo:
 
 ```sh
-$ make GMBR_DS_32
+$ make GMBR_DS_64
 ````
 
 **WINDOWS**
