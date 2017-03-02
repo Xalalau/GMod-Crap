@@ -20,11 +20,11 @@ include("xmh/language.lua" )
 
 if SERVER then
   -- Sends the client files
-	AddCSLuaFile()
-	AddCSLuaFile("xmh/client/xmh_cl.lua"         )
-	AddCSLuaFile("xmh/client/commands_table.lua" )
-	AddCSLuaFile("xmh/client/modules/XMHText.lua")
-	AddCSLuaFile("xmh/language.lua")
+    AddCSLuaFile()
+    AddCSLuaFile("xmh/client/xmh_cl.lua"         )
+    AddCSLuaFile("xmh/client/commands_table.lua" )
+    AddCSLuaFile("xmh/client/modules/XMHText.lua")
+    AddCSLuaFile("xmh/language.lua")
   
   -- Starts the server side
   include("xmh/server/xmh_sv.lua" )

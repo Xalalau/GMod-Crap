@@ -421,6 +421,13 @@ xmh_commands = {
     cheat           = true,
     admin           = false
   },
+  ["xmh_camera_fov"] = {
+    command_type    = "runconsolecommand",
+    category        = "General",
+    default         = GetConVar("xmh_camera_fov"):GetInt(),
+    cheat           = true,
+    admin           = false
+  },
   -- ##################### NPC MOVEMENT
   ["xmh_npcwalkrun_var"] = {
     command_type    = "net",

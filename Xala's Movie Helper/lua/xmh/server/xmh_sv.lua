@@ -618,8 +618,6 @@ end)
 
 hook.Add("GetFallDamage", "GetFallDamage_xmh", function(ply, speed)
     if ply:IsValid() and sync_table["xmh_falldamage_var"][1] == 1 then
-        if ply:IsAdmin() or ply:IsSuperAdmin() then
-            return math.max(0, math.ceil(0.2418*speed - 141.75 ))
-        end
+        return math.max(0, math.ceil(0.2418*speed - 141.75 ))
     end
 end)

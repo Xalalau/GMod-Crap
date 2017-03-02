@@ -1,6 +1,6 @@
 --[[
    \   XALA'S MOVIE HELPER
- =3 ]]  Revision = "XMH.Rev.23 - 15/11/2016 (dd/mm/yyyy)" --[[
+ =3 ]]  Revision = "XMH.Rev.23.1 - 01/03/2017 (dd/mm/yyyy)" --[[
  =o |   License: MIT
    /   Created by: Xalalau Xubilozo
   |
@@ -191,6 +191,7 @@ CreateClientConVar("xmh_checkuncheck_var"      ,1   ,false,false) --   Client
 CreateClientConVar("xmh_editallweapons_var"    ,0   ,false,false) --   Client
 CreateClientConVar("xmh_editweaponsallplys_var",0   ,false,false) -- Server
 CreateClientConVar("xmh_defaultsall_var"       ,0   ,false,false) --   Client
+CreateClientConVar("xmh_camera_fov"            ,0   ,false,false) --   Client
 
 CreateClientConVar("xmh_make_invisibility_admin_only_var",0,false,false) -- Server (Special cvar only option)
 CreateClientConVar("xmh_positionname_var" ,XMH_LANG[LANG]["client_var_teleport"],false,false) -- Client
@@ -465,7 +466,7 @@ function XMH_AutoSave(save_bool)
             RunConsoleCommand("gm_save")
         end)
     else
-        timer.Destroy("AutoSave");
+        timer.Destroy("AutoSave")
     end
 end
 
@@ -712,7 +713,7 @@ net.Receive("XMH_PlayerRespawn",function()
 end)
 
 -- This timer syncs our "xmh_" cvars with their menu states and applies the changes to the game
-timer.Create("Sync",0.7,0,function()
+timer.Create("Sync",0.35,0,function()
     local actual_value, prefix, var_type
 
     AdminCheck()
@@ -761,6 +762,17 @@ timer.Create("Sync",0.7,0,function()
                     end
                 end
             end
+        end
+    end
+
+    -- Special: cameras FOV
+    if (LocalPlayer():GetViewEntity():GetClass() == "gmod_cameraprop") then
+        if (GetConVar("xmh_camera_fov"):GetInt() != LocalPlayer():GetFOV()) then
+            RunConsoleCommand("fov", GetConVar("xmh_camera_fov"):GetInt())
+        end
+    else
+        if (GetConVar("xmh_fov_var"):GetInt() != LocalPlayer():GetFOV()) then
+            RunConsoleCommand("fov", GetConVar("xmh_fov_var"):GetInt())
         end
     end
 end)
@@ -956,6 +968,8 @@ local function General(Panel)
     Panel:ControlHelp     (XMH_LANG[LANG]["client_menu_general_fov_desc"     ])
     Panel:NumSlider       (XMH_LANG[LANG]["client_menu_general_vfov"         ], "viewmodel_fov", 0, 360, 0)
     Panel:ControlHelp     (XMH_LANG[LANG]["client_menu_general_vfov_desc"    ])
+    Panel:NumSlider       (XMH_LANG[LANG]["client_menu_general_cfov"         ], "xmh_camera_fov", 0, 90, 0)
+    Panel:ControlHelp     (XMH_LANG[LANG]["client_menu_general_cfov_desc"    ])
 end
 
 local function NPCMovement(Panel)

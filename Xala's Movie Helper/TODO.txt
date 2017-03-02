@@ -5,4 +5,4 @@ http://steamcommunity.com/sharedfiles/filedetails/?id=442747507&searchtext=NPC -
 - Check admin mods and similar tools for ideas (like Bill Gates does) 
 - Try again to hide the physgun glow when it's set to invisible 
 - If some part of a translation is missing, make it English
-- Add Source Recorder stuff? (like https://garrysmods.org/download/2223/source-recorder-menu-v2)
+- Add Source Recorder stuff? (like https://garrysmods.org/download/2223/source-recorder-menu-v2)-- há 1 - Acabei de encontrar o problema. Era um conflito com um outro addon que eu tinha instalado: Shrink Ray Mod. Aqui o link dele: ".../?id=167016569" Desativei ele e tudo está ok! ;) (Lukezilla)
