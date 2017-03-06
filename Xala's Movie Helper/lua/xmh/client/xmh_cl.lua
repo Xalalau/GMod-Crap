@@ -1,6 +1,6 @@
 --[[
    \   XALA'S MOVIE HELPER
- =3 ]]  Revision = "XMH.Rev.23.1 - 01/03/2017 (dd/mm/yyyy)" --[[
+ =3 ]]  Revision = "XMH.Rev.23.2 - 06/04/2017 (dd/mm/yyyy)" --[[
  =o |   License: MIT
    /   Created by: Xalalau Xubilozo
   |
@@ -713,69 +713,71 @@ net.Receive("XMH_PlayerRespawn",function()
 end)
 
 -- This timer syncs our "xmh_" cvars with their menu states and applies the changes to the game
-timer.Create("Sync",0.35,0,function()
-    local actual_value, prefix, var_type
+local function StartClSyncing() 
+    timer.Create("Sync",0.50,0,function()
+        local actual_value, prefix, var_type
 
-    AdminCheck()
+        AdminCheck()
 
-    for k,_ in pairs(xmh_commands) do
-        prefix = string.Explode("_", k)
-        if prefix[1] == "xmh" then -- Is it a "xmh_" var?
-            if xmh_commands[k].command_type != "runconsolecommand" then -- Is the type ok?
-                if (xmh_commands[k].cheat == true and GetConVar("sv_cheats"):GetInt() == 1) or xmh_commands[k].cheat == false then -- Is the cheats sittuation ok?
-                    if (xmh_commands[k].admin == true and checkAdmin() == true) or xmh_commands[k].admin == false then -- Is admin or user ok?
-                        actual_value = tonumber(string.format("%.2f", GetConVar(k):GetFloat())) -- Getting the value...
-                        if (xmh_commands[k].value != actual_value) then -- Are the values different?
-                            -- Yes = applying changes...
-                            if xmh_commands[k].command_type == "net" then
-                                if xmh_commands[k].var_type == "int2" then
-                                    net.Start       (xmh_commands[k].func)
-                                    net.WriteString (k                   )
-                                    net.WriteInt    (actual_value, 2     )
-                                    net.SendToServer(                    )
-                                elseif xmh_commands[k].var_type == "int16" then
-                                    net.Start       (xmh_commands[k].func)
-                                    net.WriteString (k                   )
-                                    net.WriteInt    (actual_value, 16    )
-                                    net.SendToServer(                    )
-                                elseif xmh_commands[k].var_type == "float" then
-                                    net.Start       (xmh_commands[k].func)
-                                    net.WriteString (k                   )
-                                    net.WriteFloat  (actual_value        )
-                                    net.SendToServer(                    )
-                                end
-                            elseif xmh_commands[k].command_type == "function" then
-                                if xmh_commands[k].sub_type == nil then
-                                    if xmh_commands[k].category == "Defaults" then
-                                        SetSectionsToReset(xmh_commands[k].value2, actual_value)
-                                    else
-                                    xmh_commands[k].func(actual_value, k)
+        for k,_ in pairs(xmh_commands) do
+            prefix = string.Explode("_", k)
+            if prefix[1] == "xmh" then -- Is it a "xmh_" var?
+                if xmh_commands[k].command_type != "runconsolecommand" then -- Is the type ok?
+                    if (xmh_commands[k].cheat == true and GetConVar("sv_cheats"):GetInt() == 1) or xmh_commands[k].cheat == false then -- Is the cheats sittuation ok?
+                        if (xmh_commands[k].admin == true and checkAdmin() == true) or xmh_commands[k].admin == false then -- Is admin or user ok?
+                            actual_value = tonumber(string.format("%.2f", GetConVar(k):GetFloat())) -- Getting the value...
+                            if (xmh_commands[k].value != actual_value) then -- Are the values different?
+                                -- Yes = applying changes...
+                                if xmh_commands[k].command_type == "net" then
+                                    if xmh_commands[k].var_type == "int2" then
+                                        net.Start       (xmh_commands[k].func)
+                                        net.WriteString (k                   )
+                                        net.WriteInt    (actual_value, 2     )
+                                        net.SendToServer(                    )
+                                    elseif xmh_commands[k].var_type == "int16" then
+                                        net.Start       (xmh_commands[k].func)
+                                        net.WriteString (k                   )
+                                        net.WriteInt    (actual_value, 16    )
+                                        net.SendToServer(                    )
+                                    elseif xmh_commands[k].var_type == "float" then
+                                        net.Start       (xmh_commands[k].func)
+                                        net.WriteString (k                   )
+                                        net.WriteFloat  (actual_value        )
+                                        net.SendToServer(                    )
                                     end
-                                elseif xmh_commands[k].sub_type == "fix" then
-                                    xmh_commands[k].func(xmh_commands[k].real_command, actual_value)
+                                elseif xmh_commands[k].command_type == "function" then
+                                    if xmh_commands[k].sub_type == nil then
+                                        if xmh_commands[k].category == "Defaults" then
+                                            SetSectionsToReset(xmh_commands[k].value2, actual_value)
+                                        else
+                                        xmh_commands[k].func(actual_value, k)
+                                        end
+                                    elseif xmh_commands[k].sub_type == "fix" then
+                                        xmh_commands[k].func(xmh_commands[k].real_command, actual_value)
+                                    end
+                                elseif xmh_commands[k].command_type == "hook" then
+                                    xmh_commands[k].func(xmh_commands[k].value2, actual_value)
                                 end
-                            elseif xmh_commands[k].command_type == "hook" then
-                                xmh_commands[k].func(xmh_commands[k].value2, actual_value)
+                                xmh_commands[k].value = actual_value -- Setting the auxiliar commands[k].value var...
                             end
-                            xmh_commands[k].value = actual_value -- Setting the auxiliar commands[k].value var...
                         end
                     end
                 end
             end
         end
-    end
 
-    -- Special: cameras FOV
-    if (LocalPlayer():GetViewEntity():GetClass() == "gmod_cameraprop") then
-        if (GetConVar("xmh_camera_fov"):GetInt() != LocalPlayer():GetFOV()) then
-            RunConsoleCommand("fov", GetConVar("xmh_camera_fov"):GetInt())
+        -- Special: cameras FOV
+        if (LocalPlayer():GetViewEntity():GetClass() == "gmod_cameraprop") then
+            if (GetConVar("xmh_camera_fov"):GetInt() != LocalPlayer():GetFOV()) then
+                RunConsoleCommand("fov", GetConVar("xmh_camera_fov"):GetInt())
+            end
+        else
+            if (GetConVar("xmh_fov_var"):GetInt() != LocalPlayer():GetFOV()) then
+                RunConsoleCommand("fov", GetConVar("xmh_fov_var"):GetInt())
+            end
         end
-    else
-        if (GetConVar("xmh_fov_var"):GetInt() != LocalPlayer():GetFOV()) then
-            RunConsoleCommand("fov", GetConVar("xmh_fov_var"):GetInt())
-        end
-    end
-end)
+    end)
+end
 
 ----------------------------
 -- Console commands
@@ -1147,4 +1149,5 @@ hook.Add("PopulateToolMenu", "All hail the menus", function ()
     spawnmenu.AddToolMenuOption("Utilities", "Xala's Movie Helper", XMH_LANG[LANG]["client_populate_menu_section10"], XMH_LANG[LANG]["client_populate_menu_section10"], "", "", ThirdPerson )
     spawnmenu.AddToolMenuOption("Utilities", "Xala's Movie Helper", XMH_LANG[LANG]["client_populate_menu_section12"], XMH_LANG[LANG]["client_populate_menu_section12"], "", "", Weapons     )
     spawnmenu.AddToolMenuOption("Utilities", "Xala's Movie Helper", XMH_LANG[LANG]["client_populate_menu_section11"], XMH_LANG[LANG]["client_populate_menu_section11"], "", "", Defaults    )
+    StartClSyncing()
 end)

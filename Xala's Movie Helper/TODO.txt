@@ -1,3 +1,7 @@
+- Editor de texto com suporte a salvar e carregar vários arquivos?
+- Unir meu tool de halos com o xala's movie helper??
+- @BlearGames Adicionar seção de partículas
+- novo estilo de zoom nas opções de FOV? copiar o que tem na câmera (arma 6 - 2)
 - NPC ficar amigo/inimigo, seguir, mudar sange...
 http://steamcommunity.com/sharedfiles/filedetails/?id=442747507&searchtext=NPC - Expand NPC movimentation options (NPC Control) (by TaBoo) 
 - "Maybe in the future unless it's already been done...a way to keep the clouds in the sky from moving as it can reveal the frames in your animation." (by KryptojackJr) 
