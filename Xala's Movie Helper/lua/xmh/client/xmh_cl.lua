@@ -1,6 +1,6 @@
 --[[
    \   XALA'S MOVIE HELPER
- =3 ]]  Revision = "XMH.Rev.23.2 - 06/04/2017 (dd/mm/yyyy)" --[[
+ =3 ]]  Revision = "XMH.Rev.23.3 - 06/04/2017 (dd/mm/yyyy)" --[[
  =o |   License: MIT
    /   Created by: Xalalau Xubilozo
   |
@@ -35,6 +35,7 @@ local supported_langs = {
  "pt-BR",
  "game",
 }
+local xmh_enable_localplayer = 0
 
 ----------------------------
 -- General
@@ -713,8 +714,8 @@ net.Receive("XMH_PlayerRespawn",function()
 end)
 
 -- This timer syncs our "xmh_" cvars with their menu states and applies the changes to the game
-local function StartClSyncing() 
-    timer.Create("Sync",0.50,0,function()
+timer.Create("Sync",0.50,0,function()
+    if ( xmh_enable_localplayer == 1 ) then
         local actual_value, prefix, var_type
 
         AdminCheck()
@@ -776,8 +777,9 @@ local function StartClSyncing()
                 RunConsoleCommand("fov", GetConVar("xmh_fov_var"):GetInt())
             end
         end
-    end)
-end
+    end
+end)
+
 
 ----------------------------
 -- Console commands
@@ -806,6 +808,15 @@ concommand.Add("xmh_removesecondaryammo", RemoveSecondaryAmmo)
 concommand.Add("xmh_givegmweapons"      , GiveGModWeapons    )
 concommand.Add("xmh_givehl2weapons"     , GiveHL2Weapons     )
 concommand.Add("xmh_clearweaponsitems"  , ClearWeaponsItems  )
+
+----------------------------
+-- Hooks
+----------------------------
+
+-- Avoid calling LocalPlayer() until all entities are loaded
+hook.Add( "InitPostEntity", "some_unique_name", function()
+	xmh_enable_localplayer = 1
+end )
 
 ----------------------------
 -- Panel
@@ -1149,5 +1160,4 @@ hook.Add("PopulateToolMenu", "All hail the menus", function ()
     spawnmenu.AddToolMenuOption("Utilities", "Xala's Movie Helper", XMH_LANG[LANG]["client_populate_menu_section10"], XMH_LANG[LANG]["client_populate_menu_section10"], "", "", ThirdPerson )
     spawnmenu.AddToolMenuOption("Utilities", "Xala's Movie Helper", XMH_LANG[LANG]["client_populate_menu_section12"], XMH_LANG[LANG]["client_populate_menu_section12"], "", "", Weapons     )
     spawnmenu.AddToolMenuOption("Utilities", "Xala's Movie Helper", XMH_LANG[LANG]["client_populate_menu_section11"], XMH_LANG[LANG]["client_populate_menu_section11"], "", "", Defaults    )
-    StartClSyncing()
 end)
