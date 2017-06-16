@@ -1,10 +1,13 @@
 --[[ 
-Credits: tool originally created by Deco and continued by Xalalau
 
-Version 1.2 by Deco: http://www.garrysmod.org/downloads/?a=view&id=42593 
-Version 1.3 and 1.4 by Xalalau: http://steamcommunity.com/sharedfiles/filedetails/?id=121182342
+[Credits] Tool originally created by Deco and continued by Xalalau
+1.2 (original) by Deco: http://www.garrysmod.org/downloads/?a=view&id=42593 
+1.3 (fix for 1.2) and 1.4 (remake) by Xalalau: http://steamcommunity.com/sharedfiles/filedetails/?id=121182342
 
-https://github.com/xalalau/GMod/tree/master/NPC%20Scene
+Current version: 1.4.6
+
+Link: https://github.com/xalalau/GMod/tree/master/NPC%20Scene
+
 ]]--
 
 -- ----------
@@ -45,7 +48,7 @@ local npcscene_ent_table = {}
 -- Table for listing the scenes mounted in the server.
 local npcscene_scenes = {}
 local npcscene_scenes_json = ""
--- Client Derma
+-- Client Derma.
 local SceneListPanel
 local ctrl
 
@@ -302,7 +305,7 @@ end
 -- INITIAL HOOKS
 -- -------------
 
--- Sets the entity and scene tables on new palyers.
+-- Sets the entity and scene tables on new players.
 if ( SERVER ) then
     hook.Add( "PlayerInitialSpawn", "set npc_scene ent table", function ( ply )
         timer.Create( "FSpawnFixNPCScene", 3, 1, function()
@@ -318,7 +321,7 @@ if ( SERVER ) then
                 net.Send( ply )
             end
 
-            -- Scenes table (It's big, so I'm sending in json chunks)
+            -- Scenes table (It's big, so I'm sending in json chunks).
             local chunks = {}
             local curTable = ""
             curTable = npcscene_scenes_json
@@ -327,7 +330,7 @@ if ( SERVER ) then
                 curTable = string.sub( curTable, 1025 )
             end
             for i,v in pairs( chunks ) do
-                timer.Create( "NPC_ORB_" .. i, i * 0.05, 1, function() -- Timer to solve "overflowed reliable buffer" error
+                timer.Create( "NPC_ORB_" .. i, i * 0.05, 1, function() -- Timer to solve "overflowed reliable buffer" error.
                     net.Start( "net_set_scenes_table" )
                     net.WriteString( v )
                     if ( i == #chunks ) then
@@ -385,9 +388,17 @@ function TOOL:LeftClick( tr )
     local ent = tr.Entity
     local scene = string.gsub( self:GetClientInfo( "scene" ), ".vcd", "" )
     local name = ""
+    local apply_multiple_times = self:GetClientNumber( "multiple" )
 
-    -- Loads the actor name (if there is one).
+    -- Checks if a scene is already applied.
     if ( ent.npcscene ) then
+        -- Are we applying the same scene with the "Multiple Times" option enabled?
+        if ( apply_multiple_times == 1 and ( ent.npcscene.Scene == scene ) ) then
+            -- If yes, we just need to play it again and thats it Haha
+            NPCSceneStart( ent )
+            return true
+        end
+        -- Gets the actor name if there is one.
         if ( ent.npcscene.name ) then
             name = ent.npcscene.name
         end
@@ -395,7 +406,7 @@ function TOOL:LeftClick( tr )
     
     -- Reloads the scenes (by deleting the loops and reloading the NPCs).
     if ( ent.npcscene ) then 
-        if ( ent.npcscene.Active == 1 and self:GetClientNumber( "multiple" ) == 0 ) then
+        if ( ent.npcscene.Active == 1 and apply_multiple_times == 0 ) then
             NPCSceneTimerStop( ent.npcscene.Index_loop )
             ent = ReloadEntity( ply, ent )
         end
@@ -416,22 +427,20 @@ function TOOL:LeftClick( tr )
     timer.Create( "AvoidSpawnErrorsNPCSceneLeft", 0.25, 1, function() -- Timer to avoid spawning errors.
         ent.npcscene = data
         
-        -- Register the entity in our internal table.
+        -- Registers the entity in our internal table.
         table.insert( npcscene_ent_table, ent:EntIndex(), ent )
         net.Start( "net_set_ent_table" )
         net.WriteTable( { { ent = ent, npcscene = ent.npcscene } } )
         net.Send( ply )
 
-        -- Plays the scene.
-        timer.Create( "AvoidSpawnErrorsNPCSceneLeft2", 0.25, 1, function() -- Timer to avoid spawning errors.
-            if ( ent.npcscene.Key == 0 ) then -- Not using keys? Let's play it.
-                NPCSceneStart( ent )
-            else -- Using keys? Let's bind it.
-                net.Start( "npc_scene_key_hook" )
-                net.WriteEntity( ent )
-                net.Send( ply )
-            end
-        end )
+        -- Plays/Prepares the scene.
+        if ( ent.npcscene.Key == 0 ) then -- Not using keys? Let's play it.
+            NPCSceneStart( ent )
+        else -- Using keys? Let's bind it.
+            net.Start( "npc_scene_key_hook" )
+            net.WriteEntity( ent )
+            net.Send( ply )
+        end
     end )
 
     return true
@@ -516,7 +525,7 @@ if ( CLIENT ) then
         if ( game.SinglePlayer() ) then
             ParseDirSingle( node, "scenes/", ".vcd" )
         else
-            timer.Create( "LoadScenes", 1, 0, function() -- Timer to ensure the loading of the scenes list on the client
+            timer.Create( "LoadScenes", 1, 0, function() -- Timer to ensure the loading of the scenes list on the client.
                 if ( table.Count( npcscene_scenes ) > 0 ) then
                     SetScenesMulti( node, npcscene_scenes )
                     timer.Stop( "LoadScenes" )
