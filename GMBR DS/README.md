@@ -17,26 +17,30 @@ $ cd ~/GMod/GMBR\ DS/
 Agora nós temos uma série de opções para escolher. Veja as combinações para de comando para o makefile:
 
 ```sh
-$ make ENTRADA
+$ make REGRA SYSTEM=VALOR
 ````
 
-ENTRADA:
-- "GMBR_DS_64 ENTRADA2"  = Gerará o executável de 64 bits;
-- "GMBR_DS_32 ENTRADA2"  = Gerará o executável de 32 bits;
-- "GMBR_DS_ZIP"          = Gerará os arquivos zip finais de Windows (32/64) e Linux (64/32);
-- "clean"                = Removerá a pasta Build.
+REGRA:
+- "GMBR_DS_64"  = Gera o executável de 64 bits;
+- "GMBR_DS_32"  = Gera o executável de 32 bits;
+- "GMBR_DS_ZIP" = Gera os arquivos zip finais de 32 e 64 bits;
+- "clean"       = Remove as pastas "build", "release" e "lib".
 
-ENTRADA2:
-- SYSTEM=Windows
-- SYSTEM=Linux
+VALOR de SYSTEM:
+- "Windows"  = Gera o executável para Windows;
+- "Linux"    = Gera o executável para Linux.
 
-Nota: A omissão da ENTRADA2 fará o make criar um executável de Linux por padrão.
+Notas:
+1) A omissão da REGRA fará o make escolher GMBR_DS_ZIP;
+2) A omissão do SYSTEM fará o make criar executáveis para Linux e Windows;
+3) A REGRA clean deve ser usada sozinha.
 
 Um exemplo:
 
 ```sh
 $ make GMBR_DS_64
 ````
+Sairá o executável de 64 bits para Linux e Windows.
 
 **WINDOWS**
 

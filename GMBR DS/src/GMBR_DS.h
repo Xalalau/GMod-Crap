@@ -14,7 +14,7 @@
   #if __linux__
     #include <unistd.h>
     #include <pwd.h>
-    #define ShellExecute(a, b, c, d, e, f) printf("Nada") /* Definicao desbugante de Linux */
+    #define ShellExecute(a, b, c, d, e, f) printf(" ") /* Definicao desbugante de Linux */
   #elif _WIN32
     #include <direct.h>
     #include <windows.h>

@@ -2,50 +2,53 @@
 DSVERSION=v2.7
 
 BLDDIR = build
+RELDIR = release
 LIBDIR = lib
 RESDIR = res
 SRCDIR = src
-BINDIR = ${BLDDIR}/bin
-OBJDIR = ${BLDDIR}/obj
-ZIPDIR = ${BLDDIR}/zip
 CFGDIR = ${RESDIR}/cfg
 ICODIR = ${RESDIR}/icon
 EXEDIR = ${RESDIR}/windows_exes
 XALDIR = ${LIBDIR}/Xalateca
+OBJDIR = ${BLDDIR}/obj
+BINDIR = ${RELDIR}/bin
+ZIPDIR = ${RELDIR}/zip
 
-WRAPPER=comp-wrapper
+WRAPPER = comp-wrapper
 
 ifeq ($(SYSTEM),)
-	SYSTEM=Linux
-	FORCEDSYSTEM=true
-endif
-ifeq ($(SYSTEM),Linux)
-	CC64=gcc
-	CC32=gcc
-	FLAG32=-m32
-	OBJDIR64 = ${OBJDIR}/obj64Lin
-	OBJDIR32 = ${OBJDIR}/obj32Lin
-	WGET=
-	UZIP=
-	EXT=
+	SYSTEM = LW
+	# Essas duas linhas fazem sumir warnings
+	OBJDIR64 = a
+	OBJDIR32 = b
 else
-	ifeq ($(SYSTEM),Windows)
-		CC64=x86_64-w64-mingw32-gcc
-		CC32=i686-w64-mingw32-gcc
-		CCRES64=x86_64-w64-mingw32-windres
-		CCRES32=i686-w64-mingw32-windres
-		FLAG32=
-		OBJDIR64 = ${OBJDIR}/obj64Win
-		OBJDIR32 = ${OBJDIR}/obj32Win
-		WGET=${EXEDIR}/wget.exe
-		UZIP=${EXEDIR}/unzip.exe
-		EXT=.exe
-		RESOURCE = ${ICODIR}/gmbrds-res.rc
-		O_RESOURCE = gmbrds-res.o
-		O_RESOURCE_64 = ${OBJDIR64}/${O_RESOURCE}
-		O_RESOURCE_32 = ${OBJDIR32}/${O_RESOURCE}
+	ifeq ($(SYSTEM),Linux)
+		CC64=gcc
+		CC32=gcc
+		FLAG32=-m32
+		OBJDIR64 = ${OBJDIR}/obj64Lin
+		OBJDIR32 = ${OBJDIR}/obj32Lin
 	else
+		ifeq ($(SYSTEM),Windows)
+			CC64=x86_64-w64-mingw32-gcc
+			CC32=i686-w64-mingw32-gcc
+			CCRES64=x86_64-w64-mingw32-windres
+			CCRES32=i686-w64-mingw32-windres
+			FLAG32=
+			OBJDIR64 = ${OBJDIR}/obj64Win
+			OBJDIR32 = ${OBJDIR}/obj32Win
+			WGET=${EXEDIR}/wget.exe
+			UZIP=${EXEDIR}/unzip.exe
+			EXT=.exe
+			RESOURCE = ${ICODIR}/gmbrds-res.rc
+			O_RESOURCE = gmbrds-res.o
+			O_RESOURCE_64 = ${OBJDIR64}/${O_RESOURCE}
+			O_RESOURCE_32 = ${OBJDIR32}/${O_RESOURCE}
+		else
+			ifneq ($(SYSTEM),LW)
 $(error "Entrada SYSTEM invalida")
+			endif
+		endif
 	endif
 endif
 
@@ -73,24 +76,42 @@ DS64 = ${BINDIR}/GMBR_DS_64bits${EXT}
 DS32 = ${BINDIR}/GMBR_DS_32bits${EXT}
 
 # Chamadas principais
+default:
+	@echo "[!] Iniciando compilação e empacotamento para Windows e Linux..."
+	$(MAKE) GMBR_DS_ZIP SYSTEM=$(SYSTEM)
 GMBR_DS_ZIP:
-	@echo "[!] Gerando arquivo(s) zip..."
-ifeq ($(FORCEDSYSTEM),true)
+ifeq ($(SYSTEM),LW)
+	@echo "\n[!] Gerando arquivo zip para Linux..."
 	$(MAKE) -C ./ CRIAR_ZIP SYSTEM=Linux
+	@echo "\n[!] Gerando arquivo zip para Windows..."
 	$(MAKE) -C ./ CRIAR_ZIP SYSTEM=Windows
 else
+	@echo "\n[!] Gerando arquivo zip para $(SYSTEM)..."
 	$(MAKE) -C ./ CRIAR_ZIP SYSTEM=$(SYSTEM)
 endif
 GMBR_DS_64: MINGW XALATECA COMPWRAPPER MENSAGEM_64 ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64}
+ifeq ($(SYSTEM),LW)
+	$(MAKE) GMBR_DS_64 SYSTEM=Windows
+	$(MAKE) GMBR_DS_64 SYSTEM=Linux
+else
 	${WRAPPER} ${CC64} ${O_GERAL_64} ${O_INIZATOR_64} ${O_GMBRDS_64} ${O_RESOURCE_64} -o ${DS64}
+endif
 GMBR_DS_32: MINGW XALATECA COMPWRAPPER MENSAGEM_32 ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32}
+ifeq ($(SYSTEM),LW)
+	$(MAKE) GMBR_DS_32 SYSTEM=Windows
+	$(MAKE) GMBR_DS_32 SYSTEM=Linux
+else
 	${WRAPPER} ${CC32} ${O_GERAL_32} ${O_INIZATOR_32} ${O_GMBRDS_32} ${O_RESOURCE_32} -o ${DS32} ${FLAG32}
+endif
 clean:
 ifeq "$(wildcard $(LIBDIR) )" "$(LIBDIR)"
 	rm -r ${LIBDIR}
 endif
 ifeq "$(wildcard $(BLDDIR) )" "$(BLDDIR)"
 	rm -r ${BLDDIR}
+endif
+ifeq "$(wildcard $(RELDIR) )" "$(RELDIR)"
+	rm -r ${RELDIR}
 endif
 
 # Chamadas secundarias
@@ -116,7 +137,7 @@ endif
 	rm -r Servidor
 	mv ${SYSTEM}_GMBR_DS_${DSVERSION}.zip ${ZIPDIR}
 MENSAGEM_64:
-	@echo "\n[!] Compilando GMBR DS 64 bits..."
+	@echo "\n[!] Compilando GMBR DS 64 bits para ${SYSTEM}..."
 ${O_RESOURCE_64}: ${RESOURCE}
 	${WRAPPER} ${CCRES64} ${RESOURCE} -O coff -o ${O_RESOURCE_64}
 ${O_GERAL_64}: ${LIB_GERAL}
@@ -126,7 +147,7 @@ ${O_INIZATOR_64}: ${LIB_INIZATOR}
 ${O_GMBRDS_64}: ${SRC_GMBRDS}
 	${WRAPPER} ${CC64} ${OBJDIR64} -c ${SRC_GMBRDS}
 MENSAGEM_32:
-	@echo "\n[!] Compilando GMBR DS 32 bits..."
+	@echo "\n[!] Compilando GMBR DS 32 bits para ${SYSTEM}..."
 ${O_GERAL_32}: ${LIB_GERAL}
 	${WRAPPER} ${CC32} ${OBJDIR32} -c ${LIB_GERAL} ${FLAG32}
 ${O_INIZATOR_32}: ${LIB_INIZATOR}
@@ -144,7 +165,7 @@ ifndef APT_CHECK
 	$(error "\nInstale o \"mingw-w64\" para poder usar esse makefile!\n")
 endif
 	@echo "\n[!] É necessário instalar o \"mingw-w64\" para compilar binários de Windows..."
-	sudo apt install mingw-w64
+	sudo apt install mingw-w64 -y
 endif
 endif
 XALATECA:
@@ -154,7 +175,7 @@ ifndef APT_CHECK
 	$(error "\nInstale o Git para poder usar esse makefile!\n")
 endif
 	@echo "\n[!] Necessário instalar \"Git\"..."
-	sudo apt install git
+	sudo apt install git -y
 endif
 	@echo "\n[!] Baixando repositório \"Xalateca\"..."
 	git clone https://github.com/xalalau/Xalateca.git ${XALDIR}
