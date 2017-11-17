@@ -1,5 +1,5 @@
 --[[
-   \   Cel Shading Tool ]] local version = "1.1" --[[
+   \   Cel Shading Tool ]] local version = "1.2" --[[
  =o |   License: MIT
    /   Created by: Xalalau Xubilozo
   |
@@ -27,8 +27,7 @@ local cel_textures = {
 }
 local cel_ent_tbl = {}
 
-local enable_gm13_for_players = 0
-local enable_celshading_on_players = 1
+local Frame
 
 if ( SERVER ) then
     util.AddNetworkString( "net_left_click_start" )
@@ -36,16 +35,16 @@ if ( SERVER ) then
     util.AddNetworkString( "net_right_click" )
     util.AddNetworkString( "net_set_halo" )
     util.AddNetworkString( "net_remove_halo" )
-    util.AddNetworkString( "net_enable_gm13_for_players" )
-    util.AddNetworkString( "net_enable_gm13_for_players_plys" )
     util.AddNetworkString( "net_enable_celshading_yourself" )
-    util.AddNetworkString( "net_enable_celshading_on_players" )
-    util.AddNetworkString( "net_enable_celshading_on_players_plys" )
+    util.AddNetworkString( "net_first_login_sync" )
+    
+    CreateConVar( "enable_gm13_for_players", "0", FCVAR_REPLICATED )
+    CreateConVar( "enable_celshading_on_players", "1", FCVAR_REPLICATED )
 end
 
 if ( CLIENT ) then
     language.Add( "Tool.cel.name", "Cel Shading" )
-    language.Add( "Tool.cel.desc", "Adds a Cel Shading like effect to entities" )
+    language.Add( "Tool.cel.desc", "Adds Cel Shading like effects to entities" )
     language.Add( "Tool.cel.left", "Apply" )
     language.Add( "Tool.cel.right", "Copy" )
     language.Add( "Tool.cel.reload", "Remove" )
@@ -56,15 +55,28 @@ if ( CLIENT ) then
     CreateClientConVar( "cel_h_colour_b" , 0, false, false )
     CreateClientConVar( "cel_h_size" , 0.3, false, false )
     CreateClientConVar( "cel_h_shake" , 0, false, false )
-    CreateClientConVar( "cel_h_passes" , 1, false, false )
+    CreateClientConVar( "cel_h_13_passes" , 1, false, false )
+    CreateClientConVar( "cel_h_13_additive" , 1, false, false )
+    CreateClientConVar( "cel_h_13_throughwalls" , 0, false, false )
     CreateClientConVar( "cel_apply_texture" , 0, false, false )
     CreateClientConVar( "cel_texture" , 1, false, false )
+    CreateClientConVar( "cel_texture_mimic_halo" , 0, false, false )
     CreateClientConVar( "cel_colour_r" , 255, false, false )
     CreateClientConVar( "cel_colour_g" , 255, false, false )
     CreateClientConVar( "cel_colour_b" , 255, false, false )
     CreateClientConVar( "cel_sobel_thershold" , 0.2, false, false )
+    CreateClientConVar( "cel_h_12_selected_halo" , 1, false, false )
+    CreateClientConVar( "cel_h_12_size_2" , 0.3, false, false )
+    CreateClientConVar( "cel_h_12_shake_2" , 0, false, false )
+    CreateClientConVar( "cel_h_12_colour_r_2" , 0, false, false )
+    CreateClientConVar( "cel_h_12_colour_g_2" , 0, false, false )
+    CreateClientConVar( "cel_h_12_colour_b_2" , 0, false, false )
+    CreateClientConVar( "cel_h_12_singleshake" , 0, false, false )
     CreateClientConVar( "cel_h_12_two_layers" , 1, false, false )
     CreateClientConVar( "cel_apply_yourself" , 0, false, false )
+    
+    CreateConVar( "enable_gm13_for_players", "0", FCVAR_REPLICATED )
+    CreateConVar( "enable_celshading_on_players", "1", FCVAR_REPLICATED )
 end
 
 -- -------------
@@ -93,23 +105,23 @@ if ( CLIENT ) then
                             render.SetStencilPassOperation( STENCILOPERATION_REPLACE )
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_ALWAYS )
                             render.SetBlend( 0 )
-                            if ( v[1].cel.SobelColor ) then
-                                v[1]:SetColor( v[1].cel.SobelColor )
+                            if ( v[1].cel.Color ) then
+                                v[1]:SetColor( v[1].cel.Color )
                             end
                             v[1]:DrawModel()
                             render.SetBlend( 1 )
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_EQUAL )
                             render.UpdateScreenEffectTexture();
-                            cel_mat:SetFloat( "$threshold", v[1].cel.SobelThershold )
+                            cel_mat:SetFloat( "$threshold", 0.15 - v[1].cel.SobelThershold * 0.15 )
                             v[1]:DrawModel()
                             render.SetMaterial( cel_mat );
                             render.DrawScreenQuad();
                         render.SetStencilEnable( false )
-                    elseif ( v[1].cel.Mode == 2 ) then -- GMod 12 halos (light / scale bugs / players)
+                    elseif ( v[1].cel.Mode == 2 ) then -- GMod 12 halos (light / scaling problems / players)
                         pos = LocalPlayer():EyePos() + LocalPlayer():EyeAngles():Forward() * 10
                         ang = LocalPlayer():EyeAngles()
                         ang = Angle( ang.p + 90, ang.y, 0 )
-                        shake = math.Rand( 0, v[1].cel.Shake )
+                        shake = math.Rand( 0, v[1].cel.Layer1.Shake )
                         render.ClearStencil()
                         render.SetStencilEnable( true )
                             render.SetStencilWriteMask( 255 )
@@ -120,19 +132,26 @@ if ( CLIENT ) then
                             render.SetStencilPassOperation( STENCILOPERATION_REPLACE )
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_ALWAYS )
                             render.SetBlend( 0 )
-                            v[1]:SetModelScale( v[1].cel.Size + 1.00 + shake, 0 )
+                            local addsizefromlayer2onlayer1 = 0
+                            if ( v[1].cel.Layers == 1 ) then
+                                addsizefromlayer2onlayer1 = v[1].cel.Layer2.Size / 2 + 1
+                            end
+                            v[1]:SetModelScale( v[1].cel.Layer1.Size / 2 + addsizefromlayer2onlayer1 + shake / 15, 0 )
                             v[1]:DrawModel()
                             v[1]:SetModelScale( 1,0 )
                             render.SetBlend( 1 )
                             render.SetStencilPassOperation( STENCIL_KEEP )
                             render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_EQUAL )
                             cam.Start3D2D( pos,ang,1 )
-                                surface.SetDrawColor( v[1].cel.Color )
+                                surface.SetDrawColor( v[1].cel.Layer1.Color )
                                 surface.DrawRect( -ScrW(), -ScrH(), ScrW() * 2, ScrH() * 2 )
                             cam.End3D2D()
                             v[1]:DrawModel()
                         render.SetStencilEnable( false )
                         if ( v[1].cel.Layers == 1 ) then
+                            if ( v[1].cel.SingleShake == 0 ) then
+                                shake = math.Rand( 0, v[1].cel.Layer2.Shake )
+                            end
                             render.ClearStencil()
                             render.SetStencilEnable( true )
                                 render.SetStencilWriteMask( 255 )
@@ -143,22 +162,22 @@ if ( CLIENT ) then
                                 render.SetStencilPassOperation( STENCILOPERATION_REPLACE )
                                 render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_ALWAYS )
                                 render.SetBlend( 0 )
-                                v[1]:SetModelScale( v[1].cel.Size / 2 + 1.00 + shake, 0 )
+                                v[1]:SetModelScale( v[1].cel.Layer2.Size / 2 + 1 + shake / 15, 0 )
                                 v[1]:DrawModel()
                                 v[1]:SetModelScale( 1,0 )
                                 render.SetBlend( 1 )
                                 render.SetStencilPassOperation( STENCIL_KEEP )
                                 render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_EQUAL )
                                 cam.Start3D2D( pos,ang,1 )
-                                    surface.SetDrawColor( Color( 0, 0, 0, 255 ) )
+                                    surface.SetDrawColor( v[1].cel.Layer2.Color )
                                     surface.DrawRect( -ScrW(), -ScrH(), ScrW() * 2, ScrH() * 2 )
                                 cam.End3D2D()
                                 v[1]:DrawModel()
                             render.SetStencilEnable( false )
                         end
-                    elseif ( v[1].cel.Mode == 3 ) then -- GMod 13 halos (heavy / work / admins)
-                        size = v[1].cel.Size + math.Rand( 0, v[1].cel.Shake * 7 )
-                        halo.Add( v, v[1].cel.Color, size, size, v[1].cel.Passes, false, false )
+                    elseif ( v[1].cel.Mode == 3 ) then -- GMod 13 halos (heavy / works / admins)
+                        size = v[1].cel.Size * 5 + math.Rand( 0, v[1].cel.Shake )
+                        halo.Add( v, v[1].cel.Color, size, size, v[1].cel.Passes, v[1].cel.Additive, v[1].cel.ThroughWalls )
                     end
                 end
             end
@@ -189,10 +208,6 @@ if ( CLIENT ) then
         end
 
         ent.cel = nil
-    end )
-
-    net.Receive( "net_enable_gm13_for_players", function()
-        enable_gm13_for_players = net.ReadInt( 2 )
     end )
 end
 
@@ -234,18 +249,6 @@ local function RemoveHalo( ent )
         duplicator.ClearEntityModifier( ent, "Cel_Halo" )
     end
 end
-
-if ( SERVER ) then
-    net.Receive( "net_enable_gm13_for_players_plys", function()
-        local value = net.ReadInt( 2 )
-
-        for _,v in pairs( player.GetAll() ) do
-            net.Start( "net_enable_gm13_for_players" )
-            net.WriteInt( value, 2 )
-            net.Send( v )
-        end
-    end )
-end    
 
 -- -------------
 -- Color
@@ -301,7 +304,7 @@ end
 -- -------------
 
 if ( SERVER ) then
-    hook.Add( "PlayerInitialSpawn", "set halo table", function ( ply )
+    hook.Add( "PlayerInitialSpawn", "set halo table and options", function ( ply )
         if ( table.Count( cel_ent_tbl ) > 0 ) then
             timer.Create( "FSpawnFix", 3, 1, function()
                 for _,v in pairs( cel_ent_tbl ) do
@@ -310,11 +313,9 @@ if ( SERVER ) then
                     net.WriteTable( v[1].cel )
                     net.Send( ply )
                 end
-                net.Start( "net_enable_gm13_for_players" )
-                net.WriteInt( enable_gm13_for_players, 2 )
-                net.Send( ply )
-                net.Start( "net_enable_celshading_on_players" )
-                net.WriteInt( enable_celshading_on_players, 2 )
+                net.Start( "net_first_login_sync" )
+                net.WriteInt( GetConVar( "enable_gm13_for_players" ):GetInt(), 2 )
+                net.WriteInt( GetConVar( "enable_celshading_on_players" ):GetInt(), 2 )
                 net.Send( ply )
             end)
         end
@@ -324,24 +325,13 @@ if ( SERVER ) then
         ply.celserver = net.ReadTable()
         ply.cel = {}
     end)
-
-    net.Receive( "net_enable_celshading_on_players_plys", function( _, ply )
-        local value = net.ReadInt( 2 )
-
-        enable_celshading_on_players = value
-
-        for _,v in pairs( player.GetAll() ) do
-            net.Start( "net_enable_celshading_on_players" )
-            net.WriteInt( value, 2 )
-            net.Send( v )
-        end
-    end)
 end
 
 if ( CLIENT ) then
-    net.Receive( "net_enable_celshading_on_players", function( _, ply )
-        enable_celshading_on_players = net.ReadInt( 2 )
-    end)
+    net.Receive( "net_first_login_sync", function()
+        RunConsoleCommand( "enable_gm13_for_players", tostring( net.ReadInt( 2 ) ) )
+        RunConsoleCommand( "enable_celshading_on_players", tostring( net.ReadInt( 2 ) ) )
+    end )
 end
 
 -- -------------
@@ -351,20 +341,26 @@ end
 if ( CLIENT ) then
 
     function BuildPanel()
-        local r, b, b
-
-        -- PANELS:
+        -- --------
+        -- WINDOW:
+        -- --------
+        
         local panelw = 510
         local panelh = 340
         
-        local Frame = vgui.Create( "DFrame" )
+        if Frame then
+            Frame:SetVisible( true )
+            return
+        end
+        
+        Frame = vgui.Create( "DFrame" )
             Frame:SetSize( panelw, panelh )
             Frame:SetPos( (ScrW() - panelw) / 2, (ScrH() - panelh) / 2 )
             Frame:SetTitle( "#Tool.cel.name" )
             Frame:SetVisible( false )
             Frame:SetDraggable( true )
             Frame:ShowCloseButton( true )
-            Frame:SetDeleteOnClose( true )
+            Frame:SetDeleteOnClose( false )
 
         local sheet = vgui.Create( "DPropertySheet", Frame )
             sheet:Dock( FILL )
@@ -379,106 +375,96 @@ if ( CLIENT ) then
 
         local panel3 = vgui.Create( "DPanel", sheet )
             panel3.Paint = function( self, w, h ) draw.RoundedBox( 4, 0, 0, w, h, Color( 112, 112, 112 ) ) end
-            sheet:AddSheet( "Texture", panel3, "icon16/picture.png" )
+            sheet:AddSheet( "Textures", panel3, "icon16/picture.png" )
 
         -- --------
-        -- PANEL 1:
+        -- TAB 3:
         -- --------
 
-        local Description = vgui.Create( "DLabel", panel1 )
-            Description:SetPos( 50, 20 )
-            Description:SetSize( 490, 45)
-            Description:SetText( "The rendering modes work good or bad depending on the entity, so do your tests.\n\n           \"GMod 13 Halo\" mode is very good, but it causes a lot of lag!" )
+        local TextureEnable = vgui.Create( "DCheckBoxLabel", panel3 )
+            TextureEnable:SetPos( 10, 10 )
+            TextureEnable:SetText( "Enable Textures" )
+            TextureEnable:SetConVar( "cel_apply_texture" )
+            TextureEnable:SetValue( GetConVar( "cel_apply_texture" ):GetInt() )
+            TextureEnable:SizeToContents()
 
-        local ApplyToYourself = vgui.Create( "DCheckBoxLabel", panel1 )
-            ApplyToYourself:SetPos( 155, 130 )
-            ApplyToYourself:SetText( "Apply Cel Shading On Yourself" )
-            ApplyToYourself:SetValue( GetConVar( "cel_apply_yourself" ):GetInt() )
-            function ApplyToYourself:OnChange( val )
-                local aux = 0
+        local HaloSizeLabel = vgui.Create( "DLabel", panel3 )
+            HaloSizeLabel:SetPos( 10, 32 )
+            HaloSizeLabel:SetText( "Select:" )
+
+        local TextureType = vgui.Create( "DComboBox", panel3 )
+            TextureType:SetPos( 10, 57 )
+            TextureType:SetSize( 190, 25 )
+            TextureType:SetValue( cel_textures[GetConVar( "cel_texture" ):GetInt()] )
+            for k,v in pairs( cel_textures ) do
+                TextureType:AddChoice( cel_textures[k], k )
+            end
+            TextureType.OnSelect = function( panel, index, value )
+                RunConsoleCommand( "cel_texture", tostring( index ) )
+            end
+
+        local TextureColorLabel = vgui.Create( "DLabel", panel3 )
+            TextureColorLabel:SetPos( 210, 5 )
+            TextureColorLabel:SetText( "Color:" )
+
+        local TextureColor = vgui.Create( "DColorMixer", panel3 )
+            local r, g, b
+            TextureColor:SetSize( 266, 230 )
+            TextureColor:SetPos( 210, 30 )
+            TextureColor:SetPalette( true )
+            TextureColor:SetAlphaBar( false )
+            TextureColor:SetWangs( true )
+            r = GetConVar( "cel_colour_r" ):GetInt()
+            g = GetConVar( "cel_colour_g" ):GetInt()
+            b = GetConVar( "cel_colour_b" ):GetInt()
+            TextureColor:SetColor( Color( r, g, b ) )
+            TextureColor.ValueChanged = function()
+                local ChosenColor = TextureColor:GetColor()
+                RunConsoleCommand( "cel_colour_r", tostring( ChosenColor.r ) )
+                RunConsoleCommand( "cel_colour_g", tostring( ChosenColor.g ) )
+                RunConsoleCommand( "cel_colour_b", tostring( ChosenColor.b ) )
+            end
+
+        local TextureMimic = vgui.Create( "DCheckBoxLabel", panel3 )
+            TextureMimic:SetPos( 10, 95 )
+            TextureMimic:SetText( "Use The Halo Color" )
+            TextureMimic:SetConVar( "cel_texture_mimic_halo" )
+            TextureMimic:SetValue( GetConVar( "cel_texture_mimic_halo" ):GetInt() )
+            TextureMimic:SizeToContents()
+            TextureMimic:SetVisible( false )
+            function TextureMimic:OnChange( val )
+                local r, g, b
                 if ( val ) then
-                    aux = 1
+                    TextureColor:SetVisible( false )
+                    TextureColorLabel:SetVisible( false )
+                else
+                    TextureColor:SetVisible( true )
+                    TextureColorLabel:SetVisible( true )
                 end
-                RunConsoleCommand( "cel_apply_yourself", tostring( aux ) )
-                LocalPlayer().celserver = { Yourself = aux }
-                LocalPlayer().cel = {}
-                net.Start( "net_enable_celshading_yourself" )
-                net.WriteTable( { Yourself = aux } )
-                net.SendToServer()
             end
 
-        local HaloEnable = vgui.Create( "DCheckBoxLabel", panel1 )
-            HaloEnable:SetVisible( false )
-            HaloEnable:SetPos( 155, 150 )
-            HaloEnable:SetText( "Enable Cel Shading On Players" )
-            HaloEnable:SetValue( enable_celshading_on_players )
-            function HaloEnable:OnChange( val )
-                local aux = 0
-                if ( val ) then
-                    aux = 1
-                end
-                net.Start( "net_enable_celshading_on_players_plys" )
-                net.WriteInt( aux, 2 )
-                net.SendToServer()
-            end
-
-        local ApplyToPlayers = vgui.Create( "DCheckBoxLabel", panel1 )
-            ApplyToPlayers:SetVisible( false )
-            ApplyToPlayers:SetPos( 145, 175 )
-            ApplyToPlayers:SetText( "Enable \"GMod 13 Halo\" for players" )
-            ApplyToPlayers:SetValue( enable_gm13_for_players )
-            function ApplyToPlayers:OnChange( val )
-                local aux = 0
-                if ( val ) then
-                    aux = 1
-                end
-                net.Start( "net_enable_gm13_for_players_plys" )
-                net.WriteInt( aux, 2 )
-                net.SendToServer()
-            end
-
-        if ( ( LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) and not game.SinglePlayer() ) then
-            ApplyToYourself:SetPos( 155, 95 )
-            HaloEnable:SetVisible( true )
-            ApplyToPlayers:SetVisible( true )
-        end
-
-        local ResetButton = vgui.Create( "DButton", panel1 )
-            ResetButton:SetPos( 180, 220 )
-            ResetButton:SetText( "Reset options!" )
-            ResetButton:SetSize( 120, 30 )
-            ResetButton.DoClick = function()
-                RunConsoleCommand( "cel_reset_options" )
-                Frame:Remove()
-                timer.Create( "ReloadMenu", 0.01, 1, function()
-                    RunConsoleCommand( "cel_menu" )
-                end)
-            end
-
-        local ToolVersion = vgui.Create( "DLabel", panel1 )
-            ToolVersion:SetPos( 455, 245 )
-            ToolVersion:SetSize( 30, 25)
-            ToolVersion:SetText( "v" .. version )
+		Frame:SetVisible( true )
+		Frame:MakePopup()
 
         -- --------
-        -- PANEL 2:
+        -- TAB 2:
         -- --------
 
         local HaloModelLabel = vgui.Create( "DLabel", panel2 )
             HaloModelLabel:SetPos( 10, 5 )
             HaloModelLabel:SetText( "Mode:" )
 
-        local HaloSobelLabel = vgui.Create( "DLabel", panel2 )
-            HaloSobelLabel:SetPos( 10, 60 )
-            HaloSobelLabel:SetText( "Thershold:" )
+        local SobelLabel = vgui.Create( "DLabel", panel2 )
+            SobelLabel:SetPos( 10, 60 )
+            SobelLabel:SetText( "Thershold:" )
 
-        local HaloSobel = vgui.Create( "DNumSlider", panel2 )
-            HaloSobel:SetPos( -130, 75 )
-            HaloSobel:SetSize( 340, 35 )
-            HaloSobel:SetMin( 0.09 )
-            HaloSobel:SetMax( 0.99 )
-            HaloSobel:SetDecimals( 2 )
-            HaloSobel:SetConVar( "cel_sobel_thershold" )
+        local Sobel = vgui.Create( "DNumSlider", panel2 )
+            Sobel:SetPos( -130, 75 )
+            Sobel:SetSize( 340, 35 )
+            Sobel:SetMin( 0.09 )
+            Sobel:SetMax( 0.99 )
+            Sobel:SetDecimals( 2 )
+            Sobel:SetConVar( "cel_sobel_thershold" )
 
         local HaloSizeLabel = vgui.Create( "DLabel", panel2 )
             HaloSizeLabel:SetPos( 10, 60 )
@@ -487,7 +473,7 @@ if ( CLIENT ) then
         local HaloSize = vgui.Create( "DNumSlider", panel2 )
             HaloSize:SetPos( -130, 75 )
             HaloSize:SetSize( 340, 35 )
-            HaloSize:SetMin( 0 )
+            HaloSize:SetMin( 0.1 )
             HaloSize:SetMax( 1 )
             HaloSize:SetDecimals( 2 )
             HaloSize:SetConVar( "cel_h_size" )
@@ -504,23 +490,48 @@ if ( CLIENT ) then
             HaloShake:SetDecimals( 2 )
             HaloShake:SetConVar( "cel_h_shake" )
 
-        local HaloPassesLabel = vgui.Create( "DLabel", panel2 )
-            HaloPassesLabel:SetPos( 10, 150 )
-            HaloPassesLabel:SetText( "Passes:" )
+        local Halo13PassesLabel = vgui.Create( "DLabel", panel2 )
+            Halo13PassesLabel:SetPos( 10, 150 )
+            Halo13PassesLabel:SetText( "Passes:" )
 
-        local HaloPasses = vgui.Create( "DNumSlider", panel2 )
-            HaloPasses:SetPos( -130, 165 )
-            HaloPasses:SetSize( 340, 35 )
-            HaloPasses:SetMin( 0 )
-            HaloPasses:SetMax( 10 )
-            HaloPasses:SetDecimals( 0 )
-            HaloPasses:SetConVar( "cel_h_passes" )
+        local Halo13Passes = vgui.Create( "DNumSlider", panel2 )
+            Halo13Passes:SetPos( -130, 165 )
+            Halo13Passes:SetSize( 340, 35 )
+            Halo13Passes:SetMin( 0 )
+            Halo13Passes:SetMax( 10 )
+            Halo13Passes:SetDecimals( 0 )
+            Halo13Passes:SetConVar( "cel_h_13_passes" )
+
+        local Halo13Aditive = vgui.Create( "DCheckBoxLabel", panel2 )
+            Halo13Aditive:SetPos( 10, 215 )
+            Halo13Aditive:SetText( "Aditive" )
+            Halo13Aditive:SetValue( GetConVar( "cel_h_13_additive" ):GetInt() )
+            function Halo13Aditive:OnChange( val )
+                local aux = 0
+                if ( val ) then
+                    aux = 1
+                end
+                RunConsoleCommand( "cel_h_13_additive", tostring( aux ) )
+            end
+
+        local Halo13ThroughWalls = vgui.Create( "DCheckBoxLabel", panel2 )
+            Halo13ThroughWalls:SetPos( 10, 240 )
+            Halo13ThroughWalls:SetText( "Render Through The Map" )
+            Halo13ThroughWalls:SetValue( GetConVar( "cel_h_13_throughwalls" ):GetInt() )
+            function Halo13ThroughWalls:OnChange( val )
+                local aux = 0
+                if ( val ) then
+                    aux = 1
+                end
+                RunConsoleCommand( "cel_h_13_throughwalls", tostring( aux ) )
+            end
 
         local HaloColorLabel = vgui.Create( "DLabel", panel2 )
             HaloColorLabel:SetPos( 210, 5 )
             HaloColorLabel:SetText( "Color:" )
 
         local HaloColor = vgui.Create( "DColorMixer", panel2 )
+            local r, g, b
             HaloColor:SetSize( 266, 230 )
             HaloColor:SetPos( 210, 30 )
             HaloColor:SetPalette( true )
@@ -532,61 +543,163 @@ if ( CLIENT ) then
             HaloColor:SetColor( Color( r, g, b ) )
             HaloColor.ValueChanged = function()
                 local ChosenColor = HaloColor:GetColor()
-
-                RunConsoleCommand( "cel_h_colour_r", tostring( ChosenColor.r ) )
-                RunConsoleCommand( "cel_h_colour_g", tostring( ChosenColor.g ) )
-                RunConsoleCommand( "cel_h_colour_b", tostring( ChosenColor.b ) )
+                if ( GetConVar( "cel_h_12_selected_halo" ):GetInt() == 1 || not GetConVar( "cel_h_12_two_layers" ):GetInt() ) then
+                    RunConsoleCommand( "cel_h_colour_r", tostring( ChosenColor.r ) )
+                    RunConsoleCommand( "cel_h_colour_g", tostring( ChosenColor.g ) )
+                    RunConsoleCommand( "cel_h_colour_b", tostring( ChosenColor.b ) )
+                else
+                    RunConsoleCommand( "cel_h_12_colour_r_2", tostring( ChosenColor.r ) )
+                    RunConsoleCommand( "cel_h_12_colour_g_2", tostring( ChosenColor.g ) )
+                    RunConsoleCommand( "cel_h_12_colour_b_2", tostring( ChosenColor.b ) )
+                end
             end
 
-        local Extralayer = vgui.Create( "DCheckBoxLabel", panel2 )
-            Extralayer:SetPos( 10, 245 )
-            Extralayer:SetText( "Use 2 layers" )
-            Extralayer:SetValue( GetConVar( "cel_h_12_two_layers" ):GetInt() )
-            function Extralayer:OnChange( val )
+        local Halo12Choose2Label = vgui.Create( "DLabel", panel2 )
+            Halo12Choose2Label:SetPos( 35, 192 )
+            Halo12Choose2Label:SetText( "Select:" )
+
+        local function Halo12Choose2Options ( choice )
+            if ( choice == 1 ) then
+                return "Layer 1"
+            elseif ( choice == 2 ) then
+                return "Layer 2"
+            end
+        end
+
+        local Halo12Choose2 = vgui.Create( "DComboBox", panel2 )
+            local r, g, b
+            Halo12Choose2:SetPos( 75, 190 )
+            Halo12Choose2:SetSize( 123, 25 )
+            local choice = GetConVar( "cel_h_12_selected_halo" ):GetInt()
+            Halo12Choose2:SetValue( Halo12Choose2Options(choice) )
+            Halo12Choose2:AddChoice( "Layer 1", 1 )
+            Halo12Choose2:AddChoice( "Layer 2", 2 )
+            Halo12Choose2.OnSelect = function( panel, value )
+                RunConsoleCommand( "cel_h_12_selected_halo", tostring( value ) )
+                if ( value == 1 || not GetConVar( "cel_h_12_two_layers" ):GetInt() ) then
+                    HaloSize:SetConVar( "cel_h_size" )
+                    HaloShake:SetConVar( "cel_h_shake" )
+                    r = GetConVar( "cel_h_colour_r" ):GetInt()
+                    g = GetConVar( "cel_h_colour_g" ):GetInt()
+                    b = GetConVar( "cel_h_colour_b" ):GetInt()
+                    HaloColor:SetColor( Color( r, g, b ) )
+                else
+                    HaloSize:SetConVar( "cel_h_12_size_2" )
+                    if ( GetConVar( "cel_h_12_singleshake" ):GetInt() == 1 ) then
+                        HaloShake:SetConVar( "cel_h_shake" )
+                    else
+                        HaloShake:SetConVar( "cel_h_12_shake_2" )
+                    end
+                    r = GetConVar( "cel_h_12_colour_r_2" ):GetInt()
+                    g = GetConVar( "cel_h_12_colour_g_2" ):GetInt()
+                    b = GetConVar( "cel_h_12_colour_b_2" ):GetInt()
+                    HaloColor:SetColor( Color( r, g, b ) )
+                end
+            end
+
+        local Halo12SingleShake = vgui.Create( "DCheckBoxLabel", panel2 )
+            Halo12SingleShake:SetPos( 35, 225 )
+            Halo12SingleShake:SetText( "Single Shake" )
+            Halo12SingleShake:SetValue( GetConVar( "cel_h_12_singleshake" ):GetInt() )
+            function Halo12SingleShake:OnChange( val )
                 local aux = 0
                 if ( val ) then
                     aux = 1
+                    HaloShake:SetConVar( "cel_h_shake" )
+                else
+                    HaloShake:SetConVar( "cel_h_12_shake_2" )
+                end
+                RunConsoleCommand( "cel_h_12_singleshake", tostring( aux ) )
+            end
+
+        local Halo12ExtraLayer = vgui.Create( "DCheckBoxLabel", panel2 )
+            Halo12ExtraLayer:SetPos( 10, 165 )
+            Halo12ExtraLayer:SetText( "Use Two Layers" )
+            Halo12ExtraLayer:SetValue( GetConVar( "cel_h_12_two_layers" ):GetInt() )
+            function Halo12ExtraLayer:OnChange( val )
+                local aux = 0
+                if ( val ) then
+                    aux = 1
+                    if ( GetConVar( "cel_h_mode" ):GetInt() == 2 ) then -- Used for hiding these options when reseting everything
+                        Halo12Choose2Label:SetVisible( true )
+                        Halo12Choose2:SetVisible( true )
+                        Halo12SingleShake:SetVisible( true )
+                    end
+                else
+                    Halo12Choose2Label:SetVisible( false )
+                    Halo12Choose2:SetVisible( false )
+                    Halo12SingleShake:SetVisible( false )
                 end
                 RunConsoleCommand( "cel_h_12_two_layers", tostring( aux ) )
             end
 
         local function ShowOptions( mode )
             if ( mode == 1 ) then
-                HaloSobelLabel:SetVisible( true )
-                HaloSobel:SetVisible( true )
+                SobelLabel:SetVisible( true )
+                Sobel:SetVisible( true )
                 HaloSizeLabel:SetVisible( false )
                 HaloSize:SetVisible( false )
                 HaloShakeLabel:SetVisible( false )
                 HaloShake:SetVisible( false )
-                HaloPassesLabel:SetVisible( false )
-                HaloPasses:SetVisible( false )
+                Halo13PassesLabel:SetVisible( false )
+                Halo13Passes:SetVisible( false )
+                Halo13Aditive:SetVisible( false )
+                Halo13ThroughWalls:SetVisible( false )
                 HaloColorLabel:SetVisible( false )
                 HaloColor:SetVisible( false )
-                Extralayer:SetVisible( false )
+                Halo12ExtraLayer:SetVisible( false )
+                Halo12Choose2Label:SetVisible( false )
+                Halo12Choose2:SetVisible( false )
+                Halo12SingleShake:SetVisible( false )
+                TextureMimic:SetVisible( false )
             elseif ( mode == 2 ) then
-                HaloSobelLabel:SetVisible( false )
-                HaloSobel:SetVisible( false )
+                SobelLabel:SetVisible( false )
+                Sobel:SetVisible( false )
                 HaloSizeLabel:SetVisible( true )
                 HaloSize:SetVisible( true )
                 HaloShakeLabel:SetVisible( true )
                 HaloShake:SetVisible( true )
-                HaloPassesLabel:SetVisible( false )
-                HaloPasses:SetVisible( false )
+                Halo13PassesLabel:SetVisible( false )
+                Halo13Passes:SetVisible( false )
+                Halo13Aditive:SetVisible( false )
+                Halo13ThroughWalls:SetVisible( false )
                 HaloColorLabel:SetVisible( true )
                 HaloColor:SetVisible( true )
-                Extralayer:SetVisible( true )
+                Halo12ExtraLayer:SetVisible( true )
+                if ( GetConVar( "cel_h_12_two_layers" ):GetInt() == 1 ) then
+                    Halo12Choose2Label:SetVisible( true )
+                    Halo12Choose2:SetVisible( true )
+                    Halo12SingleShake:SetVisible( true )
+                end
+                TextureMimic:SetVisible( true )
             elseif ( mode == 3 ) then
-                HaloSobelLabel:SetVisible( false )
-                HaloSobel:SetVisible( false )
+                SobelLabel:SetVisible( false )
+                Sobel:SetVisible( false )
                 HaloSizeLabel:SetVisible( true )
                 HaloSize:SetVisible( true )
                 HaloShakeLabel:SetVisible( true )
                 HaloShake:SetVisible( true )
-                HaloPassesLabel:SetVisible( true )
-                HaloPasses:SetVisible( true )
+                Halo13PassesLabel:SetVisible( true )
+                Halo13Passes:SetVisible( true )
+                Halo13Aditive:SetVisible( true )
+                Halo13ThroughWalls:SetVisible( true )
                 HaloColorLabel:SetVisible( true )
                 HaloColor:SetVisible( true )
-                Extralayer:SetVisible( false )
+                Halo12ExtraLayer:SetVisible( false )
+                Halo12Choose2Label:SetVisible( false )
+                Halo12Choose2:SetVisible( false )
+                Halo12SingleShake:SetVisible( false )
+                TextureMimic:SetVisible( true )
+            end
+        end
+
+        local function HaloChooseOptions ( choice )
+            if ( choice == 1 ) then
+                return "Sobel"
+            elseif ( choice == 2 ) then
+                return "GMod 12 Halo"
+            elseif ( choice == 3 ) then
+                return "GMod 13 Halo"
             end
         end
 
@@ -594,82 +707,153 @@ if ( CLIENT ) then
             HaloChoose:SetPos( 10, 30 )
             HaloChoose:SetSize( 190, 25 )
             local choice = GetConVar( "cel_h_mode" ):GetInt()
-            if ( choice == 1 ) then
-                HaloChoose:SetValue( "Sobel" )
-            elseif ( choice == 2 ) then
-                HaloChoose:SetValue( "GMod 12 Halo" )
-            elseif ( choice == 3 ) then
-                HaloChoose:SetValue( "GMod 13 Halo" )
-            end
+            HaloChoose:SetValue( HaloChooseOptions(choice) )
             ShowOptions( choice )
             HaloChoose:AddChoice( "Sobel", 1 )
             HaloChoose:AddChoice( "GMod 12 Halo", 2 )
-
-            if ( LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) or ( enable_gm13_for_players == 1 ) then
+            if ( LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) or ( GetConVar( "enable_gm13_for_players" ):GetInt() == 1 ) then
                 HaloChoose:AddChoice( "GMod 13 Halo", 3 )
             end
-            HaloChoose.OnSelect = function( panel, index, value )
-                RunConsoleCommand( "cel_h_mode", tostring( index ) )
-                ShowOptions( index )
+            HaloChoose.OnSelect = function( panel, value )
+                RunConsoleCommand( "cel_h_mode", tostring( value ) )
+                ShowOptions( value )
             end
 
         -- --------
-        -- PANEL 3:
+        -- TAB 1:
         -- --------
 
-        local TextureColorLabel = vgui.Create( "DLabel", panel3 )
-            TextureColorLabel:SetPos( 210, 5 )
-            TextureColorLabel:SetText( "Color:" )
+        local Description = vgui.Create( "DLabel", panel1 )
+            Description:SetPos( 50, 20 )
+            Description:SetSize( 490, 45)
+            Description:SetText( "The rendering modes work good or bad depending on the entity, so do your tests.\n\n                    \"GMod 13 Halo\" mode is very good but causes a lot of lag!" )
 
-        local TextureColor = vgui.Create( "DColorMixer", panel3 )
-            TextureColor:SetSize( 266, 230 )
-            TextureColor:SetPos( 210, 30 )
-            TextureColor:SetPalette( true )
-            TextureColor:SetAlphaBar( false )
-            TextureColor:SetWangs( true )
-            r = GetConVar( "cel_colour_r" ):GetInt()
-            g = GetConVar( "cel_colour_g" ):GetInt()
-            b = GetConVar( "cel_colour_b" ):GetInt()
-            TextureColor:SetColor( Color( r, g, b ) )
-            TextureColor.ValueChanged = function()
-                local ChosenColor = TextureColor:GetColor()
-
-                RunConsoleCommand( "cel_colour_r", tostring( ChosenColor.r ) )
-                RunConsoleCommand( "cel_colour_g", tostring( ChosenColor.g ) )
-                RunConsoleCommand( "cel_colour_b", tostring( ChosenColor.b ) )
+        local ApplyOnYourself = vgui.Create( "DCheckBoxLabel", panel1 )
+            ApplyOnYourself:SetPos( 155, 130 )
+            ApplyOnYourself:SetText( "Apply The Effect On Yourself" )
+            ApplyOnYourself:SetValue( GetConVar( "cel_apply_yourself" ):GetInt() )
+            function ApplyOnYourself:OnChange( val )
+                local aux = 0
+                if ( val ) then
+                    aux = 1
+                end
+                RunConsoleCommand( "cel_apply_yourself", tostring( aux ) )
+                LocalPlayer().celserver = { Yourself = aux }
+                LocalPlayer().cel = {}
+                net.Start( "net_enable_celshading_yourself" )
+                net.WriteTable( { Yourself = aux } )
+                net.SendToServer()
             end
 
-        local HaloSizeLabel = vgui.Create( "DLabel", panel3 )
-            HaloSizeLabel:SetPos( 10, 5 )
-            HaloSizeLabel:SetText( "Texture:" )
-
-        local TextureType = vgui.Create( "DComboBox", panel3 )
-            TextureType:SetPos( 10, 30 )
-            TextureType:SetSize( 190, 25 )
-            TextureType:SetValue( cel_textures[GetConVar( "cel_texture" ):GetInt()] )
-            for k,v in pairs( cel_textures ) do
-                TextureType:AddChoice( cel_textures[k], k )
-            end
-            TextureType.OnSelect = function( panel, index, value )
-                RunConsoleCommand( "cel_texture", tostring( index ) )
+        local ApplyOnPlayers = vgui.Create( "DCheckBoxLabel", panel1 )
+            ApplyOnPlayers:SetVisible( false )
+            ApplyOnPlayers:SetPos( 137, 150 )
+            ApplyOnPlayers:SetText( "Enable Rendering On Playermodels" )
+            ApplyOnPlayers:SetValue( GetConVar( "enable_celshading_on_players" ):GetInt() )
+            function ApplyOnPlayers:OnChange( val )
+                local aux = 0
+                if ( val ) then
+                    aux = 1
+                end
+                RunConsoleCommand( "enable_celshading_on_players", tostring( aux ) )
             end
 
-        local HaloSizeLabel = vgui.Create( "DLabel", panel3 )
-            HaloSizeLabel:SetPos( 10, 65 )
-            HaloSizeLabel:SetText( "Options:" )
+        local EnableHalo13ForPlayers = vgui.Create( "DCheckBoxLabel", panel1 )
+            EnableHalo13ForPlayers:SetVisible( false )
+            EnableHalo13ForPlayers:SetPos( 105, 175 )
+            EnableHalo13ForPlayers:SetText( "Enable \"GMod 13 Halo\" Option On Clients Menus" )
+            EnableHalo13ForPlayers:SetValue( GetConVar( "enable_gm13_for_players" ):GetInt() )
+            function EnableHalo13ForPlayers:OnChange( val )
+                local aux = 0
+                if ( val ) then
+                    aux = 1
+                end
+                RunConsoleCommand( "enable_gm13_for_players", tostring( aux ) )
+            end
 
-        local TextureEnable = vgui.Create( "DCheckBoxLabel", panel3 )
-            TextureEnable:SetPos( 10, 90 )
-            TextureEnable:SetText( "Enable Textures" )
-            TextureEnable:SetConVar( "cel_apply_texture" )
-            TextureEnable:SetValue( GetConVar( "cel_apply_texture" ):GetInt() )
-            TextureEnable:SizeToContents()
+        if ( ( LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) and not game.SinglePlayer() ) then
+            ApplyOnYourself:SetPos( 155, 95 )
+            ApplyOnPlayers:SetVisible( true )
+            EnableHalo13ForPlayers:SetVisible( true )
+        end
 
-		Frame:SetVisible( true )
-		Frame:MakePopup()
+        local ResetButton = vgui.Create( "DButton", panel1 )
+            local r, g, b
+            ResetButton:SetPos( 180, 220 )
+            ResetButton:SetText( "Reset Options!" )
+            ResetButton:SetSize( 120, 30 )
+            ResetButton.DoClick = function()
+                HaloChoose:ChooseOption( HaloChooseOptions(1), 1)
+                Halo12Choose2:ChooseOption( Halo12Choose2Options(1), 1 )
+                timer.Create( "cel_Wait_", 0.3, 1, function() -- Wait for the changes
+                    RunConsoleCommand( "cel_h_colour_r", "255" )
+                    RunConsoleCommand( "cel_h_colour_g", "0" )
+                    RunConsoleCommand( "cel_h_colour_b", "0" )
+                    RunConsoleCommand( "cel_h_size", "0.3" )
+                    RunConsoleCommand( "cel_h_shake", "0.00" )
+                    RunConsoleCommand( "cel_h_13_passes", "1" )
+                    RunConsoleCommand( "cel_h_13_additive", "1" )
+                    RunConsoleCommand( "cel_h_13_throughwalls", "0" )
+                    RunConsoleCommand( "cel_apply_texture", "0" )
+                    RunConsoleCommand( "cel_texture", "1" )
+                    RunConsoleCommand( "cel_colour_r", "255" )
+                    RunConsoleCommand( "cel_colour_g", "255" )
+                    RunConsoleCommand( "cel_colour_b", "255" )
+                    RunConsoleCommand( "cel_sobel_thershold", "0.2" )
+                    RunConsoleCommand( "cel_h_12_size_2", "0.3" )
+                    RunConsoleCommand( "cel_h_12_shake_2", "0.00" )
+                    RunConsoleCommand( "cel_h_12_colour_r_2", "0" )
+                    RunConsoleCommand( "cel_h_12_colour_g_2", "0" )
+                    RunConsoleCommand( "cel_h_12_colour_b_2", "0" )
+                    RunConsoleCommand( "cel_apply_yourself", "0" )
+                    RunConsoleCommand( "cel_texture_mimic_halo", "0" )
+
+                    -- ApplyOnYourself:
+                    ApplyOnYourself:SetValue( 0 )
+                    -- ApplyOnPlayers:
+                    ApplyOnPlayers:SetValue( 1 )
+                    -- EnableHalo13ForPlayers:
+                    EnableHalo13ForPlayers:SetValue( 0 )
+                    timer.Create( "cel_Wait2_", 0.3, 1, function() -- Wait for the changes
+                        -- HaloColor:
+                        r = GetConVar( "cel_h_colour_r" ):GetInt()
+                        g = GetConVar( "cel_h_colour_g" ):GetInt()
+                        b = GetConVar( "cel_h_colour_b" ):GetInt()
+                        HaloColor:SetColor( Color( r, g, b ) ) 
+                        HaloColor:SetColor( Color( r, g, b ) ) -- It seems that GMod doesn't see this change at first, so here is another call
+                        -- Halo12ExtraLayer:
+                        Halo12ExtraLayer:SetValue( 1 )
+                        -- Halo12SingleShake:
+                        Halo12SingleShake:SetValue( 0 )
+                        -- Halo13Aditive:
+                        Halo13Aditive:SetValue( GetConVar( "cel_h_13_additive" ):GetInt() )
+                        -- Halo13ThroughWalls:
+                        Halo13ThroughWalls:SetValue( GetConVar( "cel_h_13_throughwalls" ):GetInt() )
+                        -- TextureType:
+                        TextureType:ChooseOption( cel_textures[1], 1 )
+                        -- TextureColor:
+                        r = GetConVar( "cel_colour_r" ):GetInt()
+                        g = GetConVar( "cel_colour_g" ):GetInt()
+                        b = GetConVar( "cel_colour_b" ):GetInt()
+                        TextureColor:SetColor( Color( r, g, b ) )
+                        TextureColor:SetColor( Color( r, g, b ) ) -- It seems that GMod doesn't see this change at first, so here is another call
+                        -- TextureMimic:
+                        TextureMimic:SetValue( GetConVar( "cel_texture_mimic_halo" ):GetInt() )
+                    end)
+                end)
+            end
+            
+        local ToolVersion = vgui.Create( "DLabel", panel1 )
+            ToolVersion:SetPos( 455, 245 )
+            ToolVersion:SetSize( 30, 25)
+            ToolVersion:SetText( "v" .. version )
+
     end
     concommand.Add( "cel_menu", BuildPanel )
-
+    
+    -- --------
+    -- PANEL:
+    -- --------
     function TOOL.BuildCPanel( CPanel )
         CPanel:AddControl( "Header", { Text = "#Tool.cel.name", Description = "#Tool.cel.desc" } )
         CPanel:Help( "" )
@@ -683,28 +867,7 @@ end
 -- ACTIONS
 -- -------------
 
-local function ResetOptions()
-    if ( CLIENT ) then
-        RunConsoleCommand( "cel_h_colour_r", "255" )
-        RunConsoleCommand( "cel_h_colour_g", "0" )
-        RunConsoleCommand( "cel_h_colour_b", "0" )
-        RunConsoleCommand( "cel_h_size", "0.3" )
-        RunConsoleCommand( "cel_h_shake", "0.00" )
-        RunConsoleCommand( "cel_apply_texture", "0" )
-        RunConsoleCommand( "cel_texture", "1" )
-        RunConsoleCommand( "cel_colour_r", "255" )
-        RunConsoleCommand( "cel_colour_g", "255" )
-        RunConsoleCommand( "cel_colour_b", "255" )
-        RunConsoleCommand( "cel_sobel_thershold", "0.2" )
-        RunConsoleCommand( "cel_h_mode", "1" )
-        RunConsoleCommand( "cel_h_12_two_layers", "1" )
-        RunConsoleCommand( "cel_apply_yourself", "0" )
-    end
-end
-
 if ( CLIENT ) then
-    concommand.Add( "cel_reset_options", ResetOptions )
-
     net.Receive( "net_right_click", function()
         local ent = net.ReadEntity()
         local mat = ent:GetMaterial()
@@ -732,19 +895,41 @@ if ( CLIENT ) then
         
         local mode = ent.cel.Mode
         RunConsoleCommand( "cel_h_mode", tostring( mode ) )
-        
-        if ( mode != 1 ) then
+
+        if ( mode == 1 ) then
+            RunConsoleCommand( "cel_sobel_thershold", tostring( ent.cel.SobelThershold ) )
+            RunConsoleCommand( "cel_h_colour_r", tostring( 255 ) )
+            RunConsoleCommand( "cel_h_colour_g", tostring( 255 ) )
+            RunConsoleCommand( "cel_h_colour_b", tostring( 255 ) )
+        elseif ( mode == 2 ) then
+            RunConsoleCommand( "cel_h_size", tostring( ent.cel.Layer1.Size ) )
+            RunConsoleCommand( "cel_h_shake", tostring( ent.cel.Layer1.Shake ) )
+            RunConsoleCommand( "cel_h_colour_r", tostring( ent.cel.Layer1.Color.r ) )
+            RunConsoleCommand( "cel_h_colour_g", tostring( ent.cel.Layer1.Color.g ) )
+            RunConsoleCommand( "cel_h_colour_b", tostring( ent.cel.Layer1.Color.b ) )
+            RunConsoleCommand( "cel_h_12_size_2", tostring( ent.cel.Layer2.Size ) )
+            RunConsoleCommand( "cel_h_12_shake_2", tostring( ent.cel.Layer2.Shake ) )
+            RunConsoleCommand( "cel_h_12_colour_r_2", tostring( ent.cel.Layer2.Color.r ) )
+            RunConsoleCommand( "cel_h_12_colour_g_2", tostring( ent.cel.Layer2.Color.g ) )
+            RunConsoleCommand( "cel_h_12_colour_b_2", tostring( ent.cel.Layer2.Color.b ) )
+            RunConsoleCommand( "cel_h_12_singleshake", tostring( ent.cel.SingleShake ) )
+            RunConsoleCommand( "cel_h_12_two_layers", tostring( ent.cel.Layers ) )
+        elseif ( mode == 3 ) then
+            RunConsoleCommand( "cel_h_size", tostring( ent.cel.Size ) )
+            RunConsoleCommand( "cel_h_shake", tostring( ent.cel.Shake ) )
             RunConsoleCommand( "cel_h_colour_r", tostring( ent.cel.Color.r ) )
             RunConsoleCommand( "cel_h_colour_g", tostring( ent.cel.Color.g ) )
             RunConsoleCommand( "cel_h_colour_b", tostring( ent.cel.Color.b ) )
-            if ( mode == 2 ) then
-                RunConsoleCommand( "cel_h_size", tostring( ent.cel.Size * 2 ) )
-                RunConsoleCommand( "cel_h_shake", tostring( ent.cel.Shake * 15 ) )
-                RunConsoleCommand( "cel_h_12_two_layers", tostring( ent.cel.Layers ) )
-            elseif ( mode == 3 ) then
-                RunConsoleCommand( "cel_h_size", tostring( ent.cel.Size ) / 5 )
-                RunConsoleCommand( "cel_h_shake", tostring( ent.cel.Shake * 10 ) )
-                RunConsoleCommand( "cel_h_passes", tostring( ent.cel.Passes ) )
+            RunConsoleCommand( "cel_h_13_passes", tostring( ent.cel.Passes ) )
+            if ent.cel.Additive then
+                RunConsoleCommand( "cel_h_13_additive", "1" )
+            else
+                RunConsoleCommand( "cel_h_13_additive", "0" )
+            end
+            if ent.cel.ThroughWalls then
+                RunConsoleCommand( "cel_h_13_throughwalls", "1" )
+            else
+                RunConsoleCommand( "cel_h_13_throughwalls", "0" )
             end
         end
     end )
@@ -752,7 +937,7 @@ if ( CLIENT ) then
     net.Receive( "net_left_click_start", function()
         local mode = GetConVar( "cel_h_mode" ):GetInt()
 
-        if ( mode == 3 and ( not ( LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) and ( enable_gm13_for_players == 0 ) ) ) then
+        if ( mode == 3 and ( not ( LocalPlayer():IsAdmin() or LocalPlayer():IsSuperAdmin() ) and ( GetConVar( "enable_gm13_for_players" ):GetInt() == 0 ) ) ) then
             h_data = { Mode = 0 }
             net.Start( "net_left_click_finish" )
             net.WriteTable( h_data )
@@ -761,41 +946,54 @@ if ( CLIENT ) then
         end
 
         local ent = net.ReadEntity()
-        local c_data, h_data, t_data
-
+        local h_data
         -- Halos and their color + Sobel
         if ( mode != 1 ) then
             local r = GetConVar( "cel_h_colour_r" ):GetInt()
             local g = GetConVar( "cel_h_colour_g" ):GetInt()
             local b = GetConVar( "cel_h_colour_b" ):GetInt()            
-            local shake = GetConVar( "cel_h_shake" ):GetFloat()
             local size = GetConVar( "cel_h_size" ):GetFloat()
-            local layers
-            local passes
+            local shake = GetConVar( "cel_h_shake" ):GetFloat()
             if ( mode == 2 ) then
-                size = size / 2
-                shake = shake / 15
-                layers = GetConVar( "cel_h_12_two_layers" ):GetInt()
+                size = size
+                shake = shake
+                local layers = GetConVar( "cel_h_12_two_layers" ):GetInt()
+                local singleshake = GetConVar( "cel_h_12_singleshake" ):GetInt()
+                local r2 = GetConVar( "cel_h_12_colour_r_2" ):GetInt()
+                local g2 = GetConVar( "cel_h_12_colour_g_2" ):GetInt()
+                local b2 = GetConVar( "cel_h_12_colour_b_2" ):GetInt()     
+                local size2 = GetConVar( "cel_h_12_size_2" ):GetFloat()
+                local shake2 = GetConVar( "cel_h_12_shake_2" ):GetFloat()
+                h_data = {
+                    Mode = mode, Layers = layers, SingleShake = singleshake,
+                    Layer1 = { Color = Color( r, g, b, 255 ), Size = size , Shake = shake },
+                    Layer2 = { Color = Color( r2, g2, b2, 255 ), Size = size2 , Shake = shake2 },
+                }
             else
-                size = math.floor( size * 5 )
-                shake = shake / 10
-                passes = GetConVar( "cel_h_passes" ):GetFloat()
+                shake = shake
+                local passes = GetConVar( "cel_h_13_passes" ):GetInt()
+                local additive = GetConVar( "cel_h_13_additive" ):GetBool()
+                local throughwalls = GetConVar( "cel_h_13_throughwalls" ):GetBool()
+                h_data = { Color = Color( r, g, b, 255 ), Size = size , Shake = shake, Mode = mode, Passes = passes, Additive = additive, ThroughWalls = throughwalls }
             end
-            h_data = { Color = Color( r, g, b, 255 ), Size = size , Shake = shake, Passes = passes, Layers = layers, Mode = mode }    
         else
-            h_data = { SobelThershold = ( 0.15 - GetConVar( "cel_sobel_thershold" ):GetFloat() * 0.15 ) , Mode = mode }
+            h_data = { SobelThershold = ( GetConVar( "cel_sobel_thershold" ):GetFloat() ) , Mode = mode }
         end
 
+        local c_data, t_data
         -- Texture and its Color
         if ( GetConVar( "cel_apply_texture" ):GetInt() == 1 ) then
-            local r = GetConVar( "cel_colour_r" ):GetInt()
-            local g = GetConVar( "cel_colour_g" ):GetInt()
-            local b = GetConVar( "cel_colour_b" ):GetInt()
-            if ( mode != 1 ) then
-                c_data = { Color = Color( r, g, b, 255 ) , Mode = mode }
+            local r, g, b
+            if (GetConVar( "cel_texture_mimic_halo" ):GetInt() == 1) then
+                r = GetConVar( "cel_h_colour_r" ):GetInt()
+                g = GetConVar( "cel_h_colour_g" ):GetInt()
+                b = GetConVar( "cel_h_colour_b" ):GetInt()
             else
-                h_data.SobelColor = Color( r, g, b, 255 )
+                r = GetConVar( "cel_colour_r" ):GetInt()
+                g = GetConVar( "cel_colour_g" ):GetInt()
+                b = GetConVar( "cel_colour_b" ):GetInt()
             end
+            c_data = { Color = Color( r, g, b, 255 ) , Mode = mode }
             t_data = { MaterialOverride = cel_textures[GetConVar( "cel_texture" ):GetInt()] }
         end
 
@@ -839,7 +1037,7 @@ end
 
 local function GetEnt( ply, trace )
     if ( ply.celserver != nil ) then
-        if ( ( ply.celserver.Yourself == 1 ) and ( enable_celshading_on_players == 1 ) ) then
+        if ( ( ply.celserver.Yourself == 1 ) and ( GetConVar( "enable_celshading_on_players" ):GetInt() == 1 ) ) then
             return ply
         end
     end
@@ -863,7 +1061,7 @@ local function IsActionValid( ent, check_ent_cel )
         return 1
     end -- The entity is valid and isn't worldspawn
 
-    if ( ent:IsPlayer() and ( enable_celshading_on_players == 0 ) ) then
+    if ( ent:IsPlayer() and ( GetConVar( "enable_celshading_on_players" ):GetInt() == 0 ) ) then
         return 1
     end
     
