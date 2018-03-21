@@ -1,3 +1,6 @@
+- Opções estão resetando de alguma forma? Um cara reclamou do FOV mudando depois dele usar "sv_cheats 1"...
+- Juntar mute de som da toolgun com a opcao de esconder efeitos da toolgun?
+- Remover som do jogador pegando armas (ideia de Ass Cheek McDiddles Worth) 
 - Editor de texto com suporte a salvar e carregar vários arquivos?
 - Unir meu tool de halos com o xala's movie helper??
 - @BlearGames Adicionar seção de partículas

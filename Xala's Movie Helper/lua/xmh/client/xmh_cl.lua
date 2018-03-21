@@ -96,8 +96,8 @@ end
 -- Language
 ----------------------------
 
--- Checks if a language is supported
-local function checkLanguage(language)
+-- Checks if a given language is supported
+local function isLanguageValid(language)
     for k,v in pairs(supported_langs) do
         if v == language then
             return true
@@ -110,18 +110,30 @@ end
 local function loadDefaultLanguage()
     if !file.Exists(xmh_lang_file, "DATA") then
         LANG = GetConVarString('gmod_language')
-        if checkLanguage(LANG) == false then
+        if isLanguageValid(LANG) == false then
             LANG = "en"
         end
     else
         LANG = file.Read(xmh_lang_file, "DATA")
         print(XMH_LANG[LANG]["client_lang_forced"].."'".. LANG.."'!")
     end
+    if LANG != "en" then
+        checkLanguage(LANG)
+    end
 end
 
--- Forces the language that the player wants
+-- Changes missing translations to English
+local function checkLanguage(ply,_,_,language)
+    for k,v in pairs(XMH_LANG["en"]) do
+        if not XMH_LANG[language][k] then
+            XMH_LANG[language][k] = v
+        end
+    end
+end
+
+-- Forces to use a given language (if it's supported)
 local function forceLanguage(ply,_,_,language)
-    if checkLanguage(language) == false then
+    if isLanguageValid(language) == false then
         print(XMH_LANG[LANG]["client_lang_not_supported"])
         for k,v in pairs(supported_langs) do
             print(v)

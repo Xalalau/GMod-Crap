@@ -1,0 +1,6 @@
+- Slow down the scenes download (server->client), show the percentage inside the scenes list;
+- The "save support" is broken? Test it;
+- A better way to know/apply the scenes with multiple actors? Print what is missing?
+- Include all the animations (lowercase and what else is missing);
+- Include more scenes (Portal 1, 2, ...);
+- Fix the umpa etc animations!!!
